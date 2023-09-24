@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Exemple of how to use h5pandas."""
+"""Example of how to use h5pandas."""
 
 import h5py
 import h5pandas
@@ -16,6 +16,8 @@ arr = [[0.77129439, 0.68873990, 0.58298317, 0.38852130, 0.76915693],
 # let's create a HDF5 file
 with h5py.File("foo.h5", "w", libver='latest', driver="core") as f:
     d = f.create_dataset('bar', data=arr)
+
+    # dataset_to_dataframe converts a dataset to a Pandas DataFrame
     df = h5pandas.dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
 
-    print(df['d'])
+    print(type(d), type(df))
