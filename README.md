@@ -1,5 +1,5 @@
 # h5pandas
-A small library to have a Pandas DataFrame backed by a HDF5 Dataset with h5py.
+A library to have a Pandas DataFrame backed by a HDF5 Dataset with h5py.
 
 ### Installation
 ```
@@ -10,7 +10,7 @@ pip install h5pandas
 How transform a h5py dataset to Pandas Dataframe:
 
 ```Python
-"""Exemple of how to use h5pandas."""
+"""Example of how to use h5pandas."""
 
 import h5py
 import h5pandas
