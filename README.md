@@ -1,5 +1,8 @@
 # h5pandas
-A library to have a Pandas DataFrame backed by a HDF5 Dataset with h5py.
+h5pandas is a library that converts HDF5 Dataset from h5py into Pandas DataFrame.
+
+### Readthedoc
+Full API documentation is available at  : https://h5pandas.readthedocs.io/en/latest/
 
 ### Installation
 ```
@@ -30,6 +33,7 @@ with h5py.File("foo.h5", "w", libver='latest', driver="core") as f:
 
     # dataset_to_dataframe converts a dataset to a Pandas DataFrame
     df = h5pandas.dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
-
-    print(type(d), type(df))
+    # df is a Pandas DataFrame
+    type(d)
 ```
+> pandas.core.frame.DataFrame
