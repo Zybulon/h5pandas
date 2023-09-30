@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Sun Jun  4 16:30:53 2023
-
-@author: Fred
+h5pandas tests.
 """
 
 from pandas.tests.extension import base

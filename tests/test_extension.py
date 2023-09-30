@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon May 29 11:10:22 2023
-
-@author: Fred
+Sandbox Tests.
 """
 
 import numpy as np

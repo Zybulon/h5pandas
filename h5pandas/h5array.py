@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+"""HDF5ExtensionArray module."""
 import numpy as np
 import h5py
 import uuid
@@ -65,7 +64,35 @@ from pandas._typing import (
 
 
 def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
-    """Transform a dataset into a dataframe."""
+    """
+    Transform a dataset into a DataFrame.
+
+    Parameters
+    ----------
+    dataset : h5py.dataset
+        The dataset to convert into a DataFrame.
+    columns : iterable, optional
+        Column labels to use for resulting frame when data does not have them,
+        defaulting to RangeIndex(0, 1, 2, ..., n). If data contains column labels,
+        will perform column selection instead.
+    index : Index or array-like, optional
+        Index to use for resulting frame. Will default to RangeIndex if
+        no indexing information part of input data and no index provided.
+    copy : bool, optional
+        Copy data from inputs.
+        For dict data, the default of None behaves like ``copy=True``.  For DataFrame
+        or 2d ndarray input, the default of None behaves like ``copy=False``.
+        If data is a dict containing one or more Series (possibly of different dtypes),
+        ``copy=False`` will ensure that these inputs are not copied.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataFrame backed by the dataset.
+        If you change the dataset values, the DataFrame will cbe changed.
+
+    """
+    """"""
     # if no columns we try to find columns or we construct a tuple of None
     if columns is None:
         if "columns" in dataset.attrs:
@@ -77,8 +104,7 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
     series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col) for i, col in enumerate(columns))
 
     # concatenate the series into a DataFrame
-    df = pandas.concat(series, copy=copy, axis=1)
-    return df
+    return pandas.concat(series, copy=copy, axis=1)
 
 
 class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.ExtensionArray):

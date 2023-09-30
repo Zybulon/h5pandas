@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""Structured Dataset Class."""
+"""Very thin overlay over h5py library."""
 
 import numpy as np
 from h5pandas.h5array import dataset_to_dataframe
@@ -11,10 +10,29 @@ except ModuleNotFoundError:
 
 
 class Group(h5py.Group):
-    """Structured Group is a h5py group that provides StructuredDataset instead of Dataset when it can."""
+    """
+    h5py Group that provides a DataFrame instead of dataset.
+
+    See h5py documentation: https://docs.h5py.org/en/stable/high/group.html
+    """
 
     def __init__(self, group_id, columns=None):
-        """Transform an object into a group that provides StructuredDataset when it can."""
+        """
+        Transform an object into a Group that provides DataFrame instead of dataset.
+
+        Parameters
+        ----------
+        group_id : TYPE
+            DESCRIPTION.
+        columns : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        """"""
         if isinstance(group_id, h5py.File):
             id = group_id['/']._id
         elif isinstance(group_id, (h5py.h5f.FileID, h5py.h5g.GroupID)):
@@ -25,7 +43,7 @@ class Group(h5py.Group):
         super().__init__(id)
 
     def __getitem__(self, *args, **kwargs):
-        """Convert item into structured item before returning it."""
+        """Convert item into DataFrame before returning it."""
         item = super().__getitem__(*args, **kwargs)
         if isinstance(item, h5py.Group):
             return Group(item)
@@ -38,7 +56,7 @@ class Group(h5py.Group):
         return item
 
     def __getattribute__(self, name):
-        """Get structured attribute if possible."""
+        """Get DataFrame if possible."""
         item = super().__getattribute__(name)
         if isinstance(item, h5py.File):
             item.__class__ = File
@@ -47,7 +65,36 @@ class Group(h5py.Group):
         return item
 
     def create_dataset(self, name, shape=None, dtype=None, data=None, index=None, columns=None, **kwargs):
-        """Get structured attribute if possible."""
+        """
+        Create a DataFrame.
+
+        If columns is provided or if data is a DataFrame, the columns names are written as attribute of the dataset.
+
+        See h5py documentation: https://docs.h5py.org/en/stable/high/dataset.html
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+        shape : TYPE, optional
+            DESCRIPTION. The default is None.
+        dtype : TYPE, optional
+            DESCRIPTION. The default is None.
+        data : TYPE, optional
+            DESCRIPTION. The default is None.
+        index : TYPE, optional
+            DESCRIPTION. The default is None.
+        columns : TYPE, optional
+            DESCRIPTION. The default is None.
+        kwargs : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The newly create DataFrame.
+
+        """
         dataset = super().create_dataset(name, shape=shape, dtype=dtype, data=data, **kwargs)
         # we look for columns name inside the dataFrame
         if isinstance(data, DataFrame) and columns is None:
@@ -61,7 +108,11 @@ class Group(h5py.Group):
 
 
 class File(h5py.File, Group):
-    """Structured Group is a h5py group that provides StructuredDataset instead of Dataset when it can."""
+    """
+    h5py File that provides a DataFrame instead of dataset.
+
+    See h5py documentation: https://docs.h5py.org/en/stable/high/file.html
+    """
 
     def __getitem__(self, *args, **kwargs):
         """Getter of Group class."""

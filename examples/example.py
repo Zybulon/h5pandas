@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This is an example of how to use h5pandas.
 

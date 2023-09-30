@@ -1,10 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 29 11:31:17 2023
-
-@author: Fred
-"""
-
+"""Pandas ExtensionDataType."""
 from pandas.api.extensions import register_extension_dtype, ExtensionDtype
 import numpy as np
 from pandas._libs.hashtable import object_hash
@@ -37,6 +31,21 @@ class HDF5Dtype(ExtensionDtype):
     _metadata: tuple[str, ...] = ()
 
     def __init__(self, *args, **kwargs):
+        """
+
+
+        Parameters
+        ----------
+        *args : TYPE
+            DESCRIPTION.
+        **kwargs : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         dtype = np.dtype(*args, **kwargs)
         self._numpy_dtype = dtype
         self._type = dtype.type
