@@ -6,15 +6,17 @@ Created on Mon May 29 11:10:22 2023
 """
 
 import numpy as np
+import h5pandas
 from h5pandas import dataset_to_dataframe
 from h5pandas import HDF5Dtype
 import h5py
 import time
+import pandas as pd
 
 HDF5Dtype("i8")
 
 
-def TestGeneral():
+def TestH5extensions():
     arr = np.random.rand(3000, 5)
     with h5py.File("toto2.h5", "w", libver='latest') as f:
         t0 = time.time()
@@ -26,6 +28,7 @@ def TestGeneral():
         print(d.dtype, t1-t0)
         t0 = time.time()
 
+        df = dataset_to_dataframe(d)
         df = dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
         t1 = time.time()
         print(df, t1-t0)
@@ -54,14 +57,15 @@ def TestGeneral():
         print(b.cumsum())
 
         # test groupby
-        print('Test groupby')
         t0 = time.time()
         result = df.groupby("a", as_index=True)
-        print(time.time()-t0)
-        t0 = time.time()
         result.b.mean()
-        print(time.time()-t0)
+        print('Test groupby', time.time()-t0)
+
         t0 = time.time()
+        result = df[(df['a'] < 0.5) & (df['b'] > 0.5)]
+        result.c.mean()
+        print('test loc :', time.time()-t0)
 
         # Tester opérations avec skipna
 
@@ -75,5 +79,18 @@ def TestGeneral():
     print('Total time : ', time.time() - t00)
 
 
+def TestH5Group():
+    arr = np.random.rand(3000, 5)
+    df = pd.DataFrame(arr)
+    with h5py.File("toto3.h5", "w", libver='latest') as f:
+        d = f.create_dataset('toto', data=df)
+
+    with h5pandas.File("toto3.h5", "r", libver='latest') as f:
+        df = f['toto']
+        print(df)
+        print(type(df))
+
+
 if __name__ == '__main__':
-    test_perso()
+    # TestH5extensions()
+    TestH5Group()
