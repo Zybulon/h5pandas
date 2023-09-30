@@ -64,13 +64,20 @@ from pandas._typing import (
 )
 
 
-def dataset_to_dataframe(dataset, columns):
-    import pandas as pd
+def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
+    """Transform a dataset into a dataframe."""
+    # if no columns we try to find columns or we construct a tuple of None
+    if columns is None:
+        if "columns" in dataset.attrs:
+            columns = tuple(np.char.decode(dataset.attrs['columns']))
+        else:
+            columns = (None,)*dataset.shape[1]
 
-    series = dict()
-    for i, col in enumerate(columns):
-        series[col] = pd.Series(HDF5ExtensionArray(dataset, i), name=col)
-    df = pd.DataFrame(series, copy=False)
+    # we create a Series for each column
+    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col) for i, col in enumerate(columns))
+
+    # concatenate the series into a DataFrame
+    df = pandas.concat(series, copy=copy, axis=1)
     return df
 
 
