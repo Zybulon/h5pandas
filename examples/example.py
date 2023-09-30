@@ -1,23 +1,58 @@
 # -*- coding: utf-8 -*-
-"""Example of how to use h5pandas."""
+"""
+This is an example of how to use h5pandas.
 
+You can use h5pandas the same way you use h5py except that it works with DataFrame.
+The main difference is that h5pandas gives pandas DataFrame objects instead of dataset objects,
+even if the file has not been written with h5pandas.
+
+h5pandas is fully compatible with h5py: you write a with one library and read with another indifferently.
+The only difference is that h5pandas provides DataFrames instead of datasets objects.
+
+This library has been developed to combine the power of Pandas' data manipulation with the efficiency of h5py and the HDF5 format.
+Pandas already has a support for HDF5 files but it requires to load all the data at
+file opening which can be very time and memory consuming for large dataset/DataFrame.
+
+Instead, this library opens a file and create a Pandas DataFrame without actually reading the data.
+The data are read only when needed, this behavior is called "lazy DataFrame".
+It allows to open very huge files(even larger than memory) instantaneously and with a very memory footprint(less than 1 MB).
+
+The particularity of these DataFrames is that they deeply rely on the underlying file object
+Each time a data is accessed it reads it from this file object.
+That means you need to make sure the underlying file is never closed.
+"""
 import h5py
 import h5pandas
+import pandas as pd
 
-arr = [[0.77129439, 0.68873990, 0.58298317, 0.38852130, 0.76915693],
-       [0.25705227, 0.25732753, 0.23350236, 0.72443825, 0.82510932],
-       [0.82022569, 0.60130446, 0.64930291, 0.53996334, 0.74156596],
-       [0.47082073, 0.26073402, 0.99410667, 0.50356161, 0.49958255],
-       [0.48200240, 0.68350121, 0.75641487, 0.00858738, 0.86024344],
-       [0.18860991, 0.50119593, 0.20673441, 0.29877018, 0.92360508],
-       [0.83575947, 0.89673302, 0.75841862, 0.70900089, 0.76026179],
-       [0.68208926, 0.37177053, 0.83115045, 0.35738034, 0.47319340]]
+df0 = pd.DataFrame([[0.09, 0.91, 0.23, 0.01, 0.02, 0.06],
+                    [0.85, 0.67, 0.17, 0.25, 0.19, 0.11],
+                    [0.92, 0.14, 0.52, 0.50, 0.43, 0.26],
+                    [0.47, 0.47, 0.48, 0.72, 0.71, 0.12],
+                    [0.05, 0.60, 0.12, 0.19, 0.20, 0.69],
+                    [0.08, 0.64, 0.31, 0.98, 0.63, 0.05],
+                    [0.74, 0.93, 0.76, 0.54, 0.03, 0.07],
+                    [0.79, 0.98, 0.51, 0.73, 0.13, 0.31]],
+                   columns=["f", "o", "o", "b", "a", "r"])
 
-# let's create a HDF5 file
-with h5py.File("foo.h5", "w", libver='latest', driver="core") as f:
-    d = f.create_dataset('bar', data=arr)
+# you can write a DataFrame into a HDF5 file with create_dataset
+# Inside the file, the columns names are saved as attribute of the dataset.
+with h5pandas.File("foo.h5", "w") as file:
+    df = file.create_dataset('bar', data=df0)
 
-    # dataset_to_dataframe converts a dataset to a Pandas DataFrame
-    df = h5pandas.dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
+# Later you can retrieve your dataFrame with exactly the same columns names (instead of having datasets with h5py).
+# If the data was not written with h5pandas, you will have a DataFrame but with no names
+with h5pandas.File("foo.h5", "r") as file:
+    df = file['/bar']
 
-    print(type(d), type(df))
+    # These DataFrames can operate with "classic" DataFrames
+    delta = df - df0
+
+    # you can still change columns names after DataFrame creation (it won't change them on the disk).
+    df.columns = ["a", "b", "c", "d", "e", "g"]
+
+
+# If you already have a dataset from h5py you can convert it into a DataFrame with dataset_to_dataframe
+with h5py.File("foo.h5", "r") as file:
+    dataset = file['/bar']
+    df = h5pandas.dataset_to_dataframe(dataset, ["a", "b", "c", "d", "e", "g"])
