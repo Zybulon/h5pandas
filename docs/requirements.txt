@@ -1,6 +1,5 @@
 sphinx
 recommonmark
-sphinx-rtd-theme
-pydata-sphinx-theme 
+sphinx-book-theme
 pandas>=2.1.0
 h5py
