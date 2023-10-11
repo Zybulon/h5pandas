@@ -107,11 +107,75 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
     return pandas.concat(series, copy=copy, axis=1)
 
 
+@pandas.api.extensions.register_dataframe_accessor("h5")
+@pandas.api.extensions.register_series_accessor("h5")
+class DatasetAccessor:
+    """Accessor to dataset for pandas object from h5pandas."""
+
+    def __init__(self, pandas_obj):
+        """
+        Init the accessor of a Panda Series or DataFrame.
+
+        Parameters
+        ----------
+        pandas_obj : pandas.Series or pandas.DataFrame
+
+        """
+        self._values = self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        """Verify the DataFrame is backed by opened h5file."""
+        if isinstance(obj, pandas.DataFrame):
+            values = obj[obj.columns[0]].values
+        elif isinstance(obj, pandas.Series) and not hasattr(obj.values, "_datatset"):
+            values = obj.values
+        else:
+            values = obj
+        if hasattr(values, "_dataset"):
+            return values
+        else:
+            raise AttributeError("Pandas Object must be backed by h5file.")
+
+    @property
+    def file(self):
+        """Return the file backing the Pandas Object."""
+        return self._values._dataset.file
+
+    @property
+    def dataset(self):
+        """Return the dataset backing the Pandas Object."""
+        return self._values._dataset
+
+    @property
+    def attrs(self):
+        """Return the file backing the Pandas Object."""
+        return self._values._dataset.attrs
+
+
 class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.ExtensionArray):
 
     _HANDLED_TYPES = (np.ndarray, numbers.Number, list)
 
-    def __init__(self, dataset, column_index=0, indices=None, dtype=None) -> None:
+    def __init__(self, dataset: h5py.Dataset, column_index: int = 0, dtype=None) -> None:
+        """
+        Create a HDF5ExtensionArray from a dataset and a column number.
+
+        Parameters
+        ----------
+        dataset : h5py.Dataset
+        column_index : int, optional
+            index of the column inside the dataset that will become an HDF5ExtensionArray. The default is 0.
+        dtype : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None
+            DESCRIPTION.
+
+        """
         if not isinstance(dataset, (h5py.Dataset)):
             # if dtype is None:
             #     if isinstance(dataset, (list, tuple)):
@@ -144,13 +208,13 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        scalars : Sequence
+        scalars: Sequence
             Each element will be an instance of the scalar type for this
             array, ``cls.dtype.type`` or be converted into this type in this method.
-        dtype : dtype, optional
+        dtype: dtype, optional
             Construct for this particular dtype. This should be a np.dtype
             compatible with the ExtensionArray.
-        copy : bool, default False
+        copy: bool, default False
             If True, copy the underlying data.
 
         Returns
@@ -173,13 +237,13 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        strings : Sequence
+        strings: Sequence
             Each element will be an instance of the scalar type for this
             array, ``cls.dtype.type``.
-        dtype : dtype, optional
+        dtype: dtype, optional
             Construct for this particular dtype. This should be a np.dtype
             compatible with the ExtensionArray.
-        copy : bool, default False
+        copy: bool, default False
             If True, copy the underlying data.
 
         Returns
@@ -195,15 +259,15 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        values : ndarray
+        values: ndarray
             An integer ndarray with the factorized values.
-        original : ExtensionArray
+        original: ExtensionArray
             The original ExtensionArray that factorize was called on.
 
         See Also
         --------
-        factorize : Top-level factorize method that dispatches here.
-        ExtensionArray.factorize : Encode the extension array as an enumerated type.
+        factorize: Top-level factorize method that dispatches here.
+        ExtensionArray.factorize: Encode the extension array as an enumerated type.
         """
 
         return HDF5ExtensionArray(values)
@@ -214,7 +278,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        item : int, slice, or ndarray
+        item: int, slice, or ndarray
             * int: The position in 'self' to get.
 
             * slice: A slice object, where 'start', 'stop', and 'step' are
@@ -226,7 +290,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Returns
         -------
-        item : scalar or ExtensionArray
+        item: scalar or ExtensionArray
 
         Notes
         -----
@@ -265,8 +329,8 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        key : int, ndarray, or slice
-            When called from, e.g. ``Series.__setitem__``, ``key`` will be
+        key: int, ndarray, or slice
+            When called from , e.g. ``Series.__setitem__``, ``key`` will be
             one of
 
             * scalar int
@@ -274,7 +338,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
             * boolean ndarray
             * slice object
 
-        value : Extensionnp.dtype.type, Sequence[Extensionnp.dtype.type], or object
+        value: Extensionnp.dtype.type, Sequence[Extensionnp.dtype.type], or object
             value or values to be set of ``key``.
 
         Returns
@@ -308,7 +372,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Returns
         -------
-        length : int
+        length: int
         """
         return len(self._dataset)
 
@@ -337,7 +401,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         If returning an ExtensionArray, then
 
         * ``na_values._is_boolean`` should be True
-        * `na_values` should implement :func:`ExtensionArray._reduce`
+        * `na_values` should implement: func: `ExtensionArray._reduce`
         * ``na_values.any`` and ``na_values.all`` should be implemented
         """
         return np.isnan(self._dataset[:, self._column_index])
@@ -365,7 +429,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         Concatenate multiple instances of H5pyArray.
 
         Args:
-            to_concat (list): List of H5pyArray instances to concatenate.
+            to_concat(list): List of H5pyArray instances to concatenate.
 
         Returns:
             H5pyArray: The concatenated H5pyArray.
@@ -394,38 +458,87 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
     # error: Signature of "__ne__" incompatible with supertype "object"
     def __ne__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self != other` (element-wise in-equality)."""
+        """Return for `self != other` (element-wise in -equality)."""
         return ~(self == other)
 
     # error: Signature of "__ne__" incompatible with supertype "object"
 
     def __lt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in-equality)."""
+        """Return for `self < other` (element-wise in -equality)."""
         if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
             return NotImplemented
         else:
             return self._dataset[:, self._column_index] < other
 
     def __gt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in-equality)."""
+        """Return for `self < other` (element-wise in -equality)."""
         if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
             return NotImplemented
         else:
             return self._dataset[:, self._column_index] > other
 
     def __le__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in-equality)."""
+        """Return for `self < other` (element-wise in -equality)."""
         if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
             return NotImplemented
         else:
             return self._dataset[:, self._column_index] <= other
 
     def __ge__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in-equality)."""
+        """Return for `self < other` (element-wise in -equality)."""
         if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
             return NotImplemented
         else:
             return self._dataset[:, self._column_index] >= other
+
+    def __add__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return self._dataset[:, self._column_index] + other
+
+    def __radd__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return other + self._dataset[:, self._column_index]
+
+    def __sub__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return self._dataset[:, self._column_index] - other
+
+    def __rsub__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return other - self._dataset[:, self._column_index]
+
+    def __mod__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return self._dataset[:, self._column_index] % other
+
+    def __mul__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return self._dataset[:, self._column_index] * other
+
+    def __truediv__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return self._dataset[:, self._column_index] * other
 
     def to_numpy(
         self,
@@ -436,19 +549,19 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         """
         Convert to a NumPy ndarray.
 
-        This is similar to :meth:`numpy.asarray`, but may provide additional control
+        This is similar to: meth: `numpy.asarray`, but may provide additional control
         over how the conversion is done.
 
         Parameters
         ----------
-        dtype : str or numpy.dtype, optional
-            The dtype to pass to :meth:`numpy.asarray`.
-        copy : bool, default False
+        dtype: str or numpy.dtype, optional
+            The dtype to pass to: meth: `numpy.asarray`.
+        copy: bool, default False
             Whether to ensure that the returned value is a not a view on
-            another array. Note that ``copy=False`` does not *ensure* that
-            ``to_numpy()`` is no-copy. Rather, ``copy=True`` ensure that
+            another array. Note that ``copy = False`` does not *ensure * that
+            ``to_numpy()`` is no-copy. Rather, ``copy = True`` ensure that
             a copy is made, even if not strictly necessary.
-        na_value : Any, optional
+        na_value: Any, optional
             The value to use for missing values. The default value depends
             on `dtype` and the type of the array.
 
@@ -505,9 +618,9 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        dtype : str or dtype
+        dtype: str or dtype
             Typecode or data-type to which the array is cast.
-        copy : bool, default True
+        copy: bool, default True
             Whether to copy the data, even if not necessary. If False,
             a copy is made only if the old dtype does not match the
             new dtype.
@@ -558,13 +671,13 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        name : str
+        name: str
             Name of the function, supported values are:
             - cummin
             - cummax
             - cumsum
             - cumprod
-        skipna : bool, default True
+        skipna: bool, default True
             If True, skip NA values.
         **kwargs
             Additional keyword arguments passed to the accumulation function.
@@ -576,7 +689,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Raises
         ------
-        NotImplementedError : subclass does not define accumulations
+        NotImplementedError: subclass does not define accumulations
         """
         if skipna:
             meth = getattr(self._dataset[:, self._column_index], name, None)
@@ -596,11 +709,11 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Parameters
         ----------
-        name : str
+        name: str
             Name of the function, supported values are:
-            { any, all, min, max, sum, mean, median, prod,
-            std, var, sem, kurt, skew }.
-        skipna : bool, default True
+            {any, all, min, max, sum, mean, median, prod,
+            std, var, sem, kurt, skew}.
+        skipna: bool, default True
             If True, skip NaN values.
         **kwargs
             Additional keyword arguments passed to the reduction function.
@@ -612,7 +725,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         Raises
         ------
-        TypeError : subclass does not define reductions
+        TypeError: subclass does not define reductions
         """
         if skipna:
             meth = getattr(self._dataset[:, self._column_index], name, None)

@@ -64,6 +64,11 @@ def TestH5extensions():
         result.c.mean()
         print('test loc :', time.time()-t0)
 
+        print(df.h5.file)
+
+        df["z"] = df["a"] + df["b"]*df["c"]
+        df["y"] = df["a"] - df["b"]/df["c"]
+
         # Tester opérations avec skipna
 
         # Tester hasna
@@ -89,5 +94,5 @@ def TestH5Group():
 
 
 if __name__ == '__main__':
-    # TestH5extensions()
-    TestH5Group()
+    TestH5extensions()
+    # TestH5Group()
