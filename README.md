@@ -49,25 +49,34 @@ df0 = pd.DataFrame([[0.09, 0.91, 0.23, 0.01, 0.02, 0.06],
                     [0.79, 0.98, 0.51, 0.73, 0.13, 0.31]],
                    columns=["f", "o", "o", "b", "a", "r"])
 
-# You can write a DataFrame into a HDF5 file with create_dataset (same as h5py).
+# you can write a DataFrame into a HDF5 file with create_dataset
 # Inside the file, the columns names are saved as attribute of the dataset.
 with h5pandas.File("foo.h5", "w") as file:
     df = file.create_dataset('bar', data=df0)
 
 # Later you can retrieve your dataFrame with exactly the same columns names (instead of having datasets with h5py).
-# If the data was not written with h5pandas, you will have a DataFrame but with no names.
+# If the data was not written with h5pandas, you will have a DataFrame but with no names
 with h5pandas.File("foo.h5", "r") as file:
     df = file['/bar']
 
-    # These DataFrames can operate with "classic" DataFrames.
+    # These DataFrames can operate with "classic" DataFrames
     delta = df - df0
 
-    # You can still change columns names after DataFrame creation (it won't change them on the disk).
+    # you can still change columns names after DataFrame creation (it won't change them on the disk).
     df.columns = ["a", "b", "c", "d", "e", "g"]
 
+    # With the "h5" accessor you can access to ...
+    # The file
+    df.h5.file
+    # The dataset
+    df.h5.dataset
+    # The attributes
+    df.h5.attrs
 
-# If you already have a dataset from h5py you can convert it into a DataFrame with dataset_to_dataframe.
+
+# If you already have a dataset from h5py you can convert it into a DataFrame with dataset_to_dataframe
 with h5py.File("foo.h5", "r") as file:
     dataset = file['/bar']
     df = h5pandas.dataset_to_dataframe(dataset, ["a", "b", "c", "d", "e", "g"])
+
 ```

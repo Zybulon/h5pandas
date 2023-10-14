@@ -1,7 +1,7 @@
 """Very thin overlay over h5py library."""
 
 import numpy as np
-from h5pandas.h5array import dataset_to_dataframe
+from h5pandas.dataframe import dataset_to_dataframe
 import h5py
 try:
     from pandas import DataFrame

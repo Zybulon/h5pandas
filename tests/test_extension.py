@@ -68,6 +68,10 @@ def TestH5extensions():
 
         df["z"] = df["a"] + df["b"]*df["c"]
         df["y"] = df["a"] - df["b"]/df["c"]
+        df["z"] = df["a"] % df["b"]
+        df["z"] = df["a"] % df["b"]
+
+        print(df.h5.attrs.keys())
 
         # Tester opérations avec skipna
 

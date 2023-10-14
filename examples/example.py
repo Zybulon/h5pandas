@@ -50,6 +50,14 @@ with h5pandas.File("foo.h5", "r") as file:
     # you can still change columns names after DataFrame creation (it won't change them on the disk).
     df.columns = ["a", "b", "c", "d", "e", "g"]
 
+    # With the "h5" accessor you can access to ...
+    # The file
+    df.h5.file
+    # The dataset
+    df.h5.dataset
+    # The attributes
+    df.h5.attrs
+
 
 # If you already have a dataset from h5py you can convert it into a DataFrame with dataset_to_dataframe
 with h5py.File("foo.h5", "r") as file:
