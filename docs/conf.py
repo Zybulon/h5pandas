@@ -4,6 +4,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import os
 import sys
+import h5pandas
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
@@ -12,7 +13,7 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'h5pandas'
 copyright = '2023, Frédéric MASSON'
 author = 'Frédéric MASSON'
-release = '0.1.5'
+release = h5pandas.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
