@@ -4,6 +4,7 @@ import h5py
 import uuid
 from h5pandas.h5datatype import HDF5Dtype
 import numbers
+from functools import cached_property
 
 from typing import (
     TYPE_CHECKING,
@@ -15,6 +16,8 @@ from typing import (
 )
 
 import pandas
+
+from pandas.compat.numpy import function as nv
 
 from pandas._libs import lib
 from pandas.core.dtypes.common import (
@@ -85,26 +88,35 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
             DESCRIPTION.
 
         """
+        if isinstance(dataset, HDF5ExtensionArray):
+            dataset = dataset._dataset
         if not isinstance(dataset, (h5py.Dataset)):
             # if dtype is None:
             #     if isinstance(dataset, (list, tuple)):
             #         dataset = np.array()
             #     dtype = dataset.dtype
+            if not isinstance(dataset, np.ndarray):
+                dataset = np.array(dataset, dtype=dtype)
+
             if len(dataset):
-                f = h5py.File("h5pyArray_{}".format(uuid.uuid4()), 'w', libver='latest', driver="core", backing_store=False)
-                try:
-                    dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=dtype)
-                except OSError:
-                    try:
-                        dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=h5py.opaque_dtype(dtype))
-                    except TypeError:
-                        dataset = np.array(dataset, dtype=dtype)
-                except TypeError:
-                    dataset = np.array([dataset], dtype=dtype)
-                    dataset = dataset.T
+                # dataset = np.array(dataset, dtype=dtype)
+                # dataset = dataset.T
+                column_index = 0
+
+                # f = h5py.File("h5pyArray_{}".format(uuid.uuid4()), 'w', libver='latest', driver="core", backing_store=False)
+                # try:
+                #     dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=dtype)
+                # except OSError:
+                #     try:
+                #         dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=h5py.opaque_dtype(dtype))
+                #     except TypeError:
+                #         dataset = np.array(dataset, dtype=dtype)
+                # except TypeError:
+                #     dataset = np.array([dataset], dtype=dtype)
+                #     dataset = dataset.T
 
             else:
-                dataset = np.empty((0, 1))
+                dataset = np.empty((0,))
                 column_index = 0
         self._dataset = dataset
         self._column_index = column_index
@@ -159,7 +171,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         -------
         ExtensionArray
         """
-        raise NotImplementedError(cls)
+        return HDF5ExtensionArray(np.array(strings, dtype=dtype))
 
     @classmethod
     def _from_factorized(cls, values, original):
@@ -215,19 +227,29 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         item = check_array_indexer(self, item)
         if is_scalar(item):
             try:
-                return self._dataset[item, self._column_index]
+                if self._dataset.ndim > 1:
+                    return self._dataset[item, self._column_index]
+                else:
+                    return self._dataset[item]
             except (ValueError, TypeError):
                 raise IndexError("only integers, slices (`:`), ellipsis (`...`), numpy.newaxis "
                                  "(`None`) and integer or boolean arrays are valid indices")
 
         elif isinstance(item, slice) and item == slice(None):
-            # We must return a shallow copy
             return HDF5ExtensionArray(self._dataset, self._column_index)
         elif isinstance(item, tuple) and (slice(None) in item or Ellipsis in item):
-            return HDF5ExtensionArray(self._dataset[*item, self._column_index])
+            if self._dataset.ndim > 1:
+                dataset = self._dataset[*item, self._column_index]
+            else:
+                dataset = self._dataset[*item]
+            return HDF5ExtensionArray(dataset)
         else:
             # FIXME : AVOID COPY HERE
-            return HDF5ExtensionArray(self._dataset[item, self._column_index])
+            if self._dataset.ndim > 1:
+                dataset = self._dataset[item, self._column_index]
+            else:
+                dataset = self._dataset[item]
+            return HDF5ExtensionArray(dataset)
 
     def __setitem__(self, key, value) -> None:
         """
@@ -273,7 +295,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         # Note, also, that Series/DataFrame.where internally use __setitem__
         # on a copy of the data.
         # FIXME
-        return self._dataset.__setitem__(key, value)
+        return self._dataset.__setitem__((key, self._column_index), value)
 
     def __len__(self) -> int:
         """
@@ -292,6 +314,9 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         # calls to ``__getitem__``, which may be slower than necessary.
         for i in range(len(self)):
             yield self[i]
+
+    def isnan(self) -> np.ndarray:
+        return self.isna()
 
     def isna(self) -> np.ndarray:
         """
@@ -313,7 +338,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         * `na_values` should implement: func: `ExtensionArray._reduce`
         * ``na_values.any`` and ``na_values.all`` should be implemented
         """
-        return np.isnan(self._dataset[:, self._column_index])
+        return np.isnan(self._ndarray)
 
     def __contains__(self, item: object) -> bool | np.bool_:
         """Return for `item in self`."""
@@ -330,9 +355,9 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         else:
             # error: Item "ExtensionArray" of "Union[ExtensionArray, ndarray]" has no
             # attribute "any"
-            return (item == self._dataset[:, self._column_index]).any()  # type: ignore[union-attr]
+            return (item == self._ndarray).any()  # type: ignore[union-attr]
 
-    @ classmethod
+    @classmethod
     def _concat_same_type(cls, to_concat):
         """
         Concatenate multiple instances of H5pyArray.
@@ -351,103 +376,41 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
         return cls(dataset)
 
-    # error: Signature of "__eq__" incompatible with supertype "object"
-    def __eq__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self == other` (element-wise equality)."""
-        # Implementer note: this should return a boolean numpy ndarray or
-        # a boolean ExtensionArray.
-        # When `other` is one of Series, Index, or DataFrame, this method should
-        # return NotImplemented (to ensure that those objects are responsible for
-        # first unpacking the arrays, and then dispatch the operation to the
-        # underlying arrays)
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] == other
+    def view(self, dtype: Dtype | None = None) -> ArrayLike:
+        """
+        Return a view on the array.
 
-    # error: Signature of "__ne__" incompatible with supertype "object"
-    def __ne__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self != other` (element-wise in -equality)."""
-        return ~(self == other)
+        Parameters
+        ----------
+        dtype : str, np.dtype, or ExtensionDtype, optional
+            Default None.
 
-    # error: Signature of "__ne__" incompatible with supertype "object"
+        Returns
+        -------
+        ExtensionArray or np.ndarray
+            A view on the :class:`ExtensionArray`'s data.
 
-    def __lt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] < other
+        Examples
+        --------
+        This gives view on the underlying data of an ``ExtensionArray`` and is not a
+        copy. Modifications on either the view or the original ``ExtensionArray``
+        will be reflectd on the underlying data:
 
-    def __gt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] > other
-
-    def __le__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] <= other
-
-    def __ge__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] >= other
-
-    def __add__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] + other
-
-    def __radd__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return other + self._dataset[:, self._column_index]
-
-    def __sub__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] - other
-
-    def __rsub__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return other - self._dataset[:, self._column_index]
-
-    def __mod__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] % other
-
-    def __mul__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] * other
-
-    def __truediv__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return self._dataset[:, self._column_index] * other
+        >>> arr = pd.array([1, 2, 3])
+        >>> arr2 = arr.view()
+        >>> arr[0] = 2
+        >>> arr2
+        <IntegerArray>
+        [2, 2, 3]
+        Length: 3, dtype: Int64
+        """
+        # NB:
+        # - This must return a *new* object referencing the same data, not self.
+        # - The only case that *must* be implemented is with dtype=None,
+        #   giving a view with the same dtype as self.
+        if dtype is not None:
+            raise NotImplementedError(dtype)
+        return self[:]
 
     def to_numpy(
         self,
@@ -479,11 +442,12 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         numpy.ndarray
         """
         # We do the copy anyway
-        num_array = self._dataset[:, self._column_index]
+        num_array = self._ndarray
         try:
             num_array = num_array.view(dtype)
         except TypeError:
             num_array = num_array.astype(dtype)
+        return num_array
 
     # def __array__(self, *args, **kwargs):
     #     return self._dataset[:, self._column_index]
@@ -492,34 +456,41 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
     # Required attributes
     # ------------------------------------------------------------------------
 
-    @ property
+    @property
     def dtype(self) -> HDF5Dtype:
         """An instance of 'np.dtype'."""
         return self._dtype
 
-    @ property
+    @property
     def shape(self):
         """Return a tuple of the array dimensions."""
         return (len(self),)
 
-    @ property
+    @property
     def size(self) -> int:
         """The number of elements in the array."""
         # error: Incompatible return value type (got "signedinteger[_64Bit]",
         # expected "int")  [return-value]
         return np.prod(self.shape)  # type: ignore[return-value]
 
-    @ property
+    @property
     def ndim(self) -> int:
         """Extension Arrays are only allowed to be 1-dimensional."""
         return 1
 
-    @ property
+    @property
     def nbytes(self) -> int:
         """The number of bytes needed to store this object in memory."""
         # If this is expensive to compute, return an approximate lower bound
         # on the number of bytes needed.
         return NotImplemented
+
+    @property
+    def _ndarray(self):
+        if self._dataset.ndim > 1:
+            return self._dataset[:, self._column_index]
+        else:
+            return self._dataset
 
     def astype(self, dtype, copy: bool = True) -> ArrayLike:
         """
@@ -540,16 +511,18 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
             An ExtensionArray if dtype is Extensionnp.dtype,
             Otherwise a NumPy ndarray with 'dtype' for its dtype.
         """
-        if isinstance(dtype, HDF5Dtype):
+        try:
             dtype = dtype._numpy_dtype
+        except Exception:
+            pass
 
-        return HDF5ExtensionArray(self._dataset[:, self._column_index].astype(dtype), self._column_index, dtype=dtype)
+        return HDF5ExtensionArray(self._ndarray.astype(dtype), self._column_index, dtype=dtype)
 
     def take(self, indices, allow_fill=False, fill_value=None):
         from pandas.core.algorithms import take
 
         # is worth to try to select only a few indices ?
-        data = self._dataset[:, self._column_index]
+        data = self._ndarray
 
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
@@ -570,7 +543,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         -------
         ExtensionArray
         """
-        return HDF5ExtensionArray(self._dataset[:, self._column_index])
+        return HDF5ExtensionArray(self._ndarray)
 
     def _accumulate(self, name: str, *, skipna: bool = True, **kwargs):
         """
@@ -601,9 +574,9 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         NotImplementedError: subclass does not define accumulations
         """
         if skipna:
-            meth = getattr(self._dataset[:, self._column_index], name, None)
+            meth = getattr(self._ndarray, name, None)
         else:
-            array = self._dataset[:, self._column_index]
+            array = self._ndarray
             meth = getattr(array[not np.isnan(array)], name, None)
         if meth is None:
             raise TypeError(
@@ -637,10 +610,10 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         TypeError: subclass does not define reductions
         """
         if skipna:
-            meth = getattr(self._dataset[:, self._column_index], name, None)
+            meth = getattr(self._ndarray, name, None)
         else:
-            array = self._dataset[:, self._column_index]
-            meth = getattr(array[not np.isnan(array)], name, None)
+            array = self._ndarray
+            meth = getattr(array[~np.isnan(array)], name, None)
         if meth is None:
             raise TypeError(
                 f"'{type(self).__name__}' with dtype {self.dtype} "
@@ -648,17 +621,269 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
             )
         return meth(**kwargs)
 
+    def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs, **kwargs):
+        # Lightly modified version of
+        # https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperatorsMixin.html
+        # The primary modification is not boxing scalar return values
+        # in NumpyExtensionArray, since pandas' ExtensionArrays are 1-d.
+
+        # Operations likes cos are much faster with ufunc
+        out = kwargs.get("out", ())
+
+        result = arraylike.maybe_dispatch_ufunc_to_dunder_op(
+            self, ufunc, method, *inputs, **kwargs
+        )
+        if result is not NotImplemented:
+            return result
+
+        if "out" in kwargs:
+            # e.g. test_ufunc_unary
+            return arraylike.dispatch_ufunc_with_out(
+                self, ufunc, method, *inputs, **kwargs
+            )
+
+        if method == "reduce":
+            result = arraylike.dispatch_reduction_ufunc(
+                self, ufunc, method, *inputs, **kwargs
+            )
+            if result is not NotImplemented:
+                # e.g. tests.series.test_ufunc.TestNumpyReductions
+                return result
+
+        # Defer to the implementation of the ufunc on unwrapped values.
+        inputs = tuple(
+            x._ndarray if isinstance(x, HDF5ExtensionArray) else x for x in inputs
+        )
+        if out:
+            kwargs["out"] = tuple(
+                x._ndarray if isinstance(x, HDF5ExtensionArray) else x for x in out
+            )
+        result = getattr(ufunc, method)(*inputs, **kwargs)
+
+        if ufunc.nout > 1:
+            # multiple return values; re-box array-like results
+            return tuple(type(self)(x) for x in result)
+        elif method == "at":
+            # no return value
+            return None
+        elif method == "reduce":
+            if isinstance(result, np.ndarray):
+                # e.g. test_np_reduce_2d
+                return type(self)(result)
+
+            # e.g. test_np_max_nested_tuples
+            return type(self)(result)
+        else:
+            # one return value; re-box array-like results
+            return type(self)(result)
+
     # ------------------------------------------------------------------------
     # Ops
 
+    def argsort(self):
+        return type(self)(np.argsort(self._ndarray))
+
     def __invert__(self):
+        """Return for `~self`."""
         return type(self)(~self._ndarray)
 
     def __neg__(self):
+        """Return for `-self`."""
         return type(self)(-self._ndarray)
 
     def __pos__(self):
+        """Return for `+self`."""
         return type(self)(+self._ndarray)
 
     def __abs__(self):
+        """Return for `abs(self)`."""
         return type(self)(abs(self._ndarray))
+
+    def memory_usage(self, *args, **kwargs):
+        return 0
+
+    # error: Signature of "__eq__" incompatible with supertype "object"
+    def __eq__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self == other` (element-wise equality)."""
+        # Implementer note: this should return a boolean numpy ndarray or
+        # a boolean ExtensionArray.
+        # When `other` is one of Series, Index, or DataFrame, this method should
+        # return NotImplemented (to ensure that those objects are responsible for
+        # first unpacking the arrays, and then dispatch the operation to the
+        # underlying arrays)
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return HDF5ExtensionArray(self._ndarray == other)
+
+    # error: Signature of "__ne__" incompatible with supertype "object"
+    def __ne__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self != other` (element-wise in -equality)."""
+        return type(self)(self._ndarray != other)
+
+    # error: Signature of "__ne__" incompatible with supertype "object"
+
+    def __lt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray < other)
+
+    def __gt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray > other)
+
+    def __le__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray <= other)
+
+    def __ge__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+        """Return for `self < other` (element-wise in -equality)."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray >= other)
+
+    def __add__(self, other: Any) -> ArrayLike:
+        """Return for `self + other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray + other)
+
+    def __radd__(self, other: Any) -> ArrayLike:
+        """Return for `other + self`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(other + self._ndarray)
+
+    def __sub__(self, other: Any) -> ArrayLike:
+        """Return for `self - other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray - other)
+
+    def __rsub__(self, other: Any) -> ArrayLike:
+        """Return for `other - self`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(other - self._ndarray)
+
+    def __mod__(self, other: Any) -> ArrayLike:
+        """Return for `self % other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray % other)
+
+    def __mul__(self, other: Any) -> ArrayLike:
+        """Return for `self * other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray * other)
+
+    def __truediv__(self, other: Any) -> ArrayLike:
+        """Return for `self / other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray / other)
+
+    def __floordiv__(self, other: Any) -> ArrayLike:
+        """Return for `self // other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray // other)
+
+    def __lshift__(self, value: Any) -> ArrayLike:
+        """Return for `self << other`."""
+        if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray << value)
+
+    def __rshift__(self, value: Any) -> ArrayLike:
+        """Return for `self >> other`."""
+        if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray >> value)
+
+    def __and__(self, other: Any) -> ArrayLike:
+        """Return for `self & other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray & other)
+
+    def __or__(self, other: Any) -> ArrayLike:
+        """Return for `self | other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray | other)
+
+    def __xor__(self, other: Any) -> ArrayLike:
+        """Return for `self ^ other`."""
+        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+            return NotImplemented
+        else:
+            return type(self)(self._ndarray ^ other)
+
+    # Additional functions that are copy of the NumpyExtensionArray functions
+
+    def sem(
+        self,
+        *,
+        axis: AxisInt | None = None,
+        dtype: NpDtype | None = None,
+        out=None,
+        ddof: int = 1,
+        keepdims: bool = False,
+        skipna: bool = True,
+    ):
+        nv.validate_stat_ddof_func((), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="sem")
+        result = nanops.nansem(self._ndarray, axis=axis, skipna=skipna, ddof=ddof)
+        return self._wrap_reduction_result(axis, result)
+
+    def kurt(
+        self,
+        *,
+        axis: AxisInt | None = None,
+        dtype: NpDtype | None = None,
+        out=None,
+        keepdims: bool = False,
+        skipna: bool = True,
+    ):
+        nv.validate_stat_ddof_func(
+            (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="kurt"
+        )
+        result = nanops.nankurt(self._ndarray, axis=axis, skipna=skipna)
+        return self._wrap_reduction_result(axis, result)
+
+    def skew(
+        self,
+        *,
+        axis: AxisInt | None = None,
+        dtype: NpDtype | None = None,
+        out=None,
+        keepdims: bool = False,
+        skipna: bool = True,
+    ):
+        nv.validate_stat_ddof_func(
+            (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="skew"
+        )
+        result = nanops.nanskew(self._ndarray, axis=axis, skipna=skipna)
+        return self._wrap_reduction_result(axis, result)

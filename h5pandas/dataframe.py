@@ -42,7 +42,7 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
             columns = (None,)*dataset.shape[1]
 
     # we create a Series for each column
-    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col) for i, col in enumerate(columns))
+    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col, copy=False) for i, col in enumerate(columns))
 
     # concatenate the series into a DataFrame
     return pandas.concat(series, copy=copy, axis=1)

@@ -306,7 +306,7 @@ class HDF5Dtype(ExtensionDtype):
         -------
         bool
         """
-        return False
+        return self._numpy_dtype == np.dtype('bool')
 
     def _get_common_dtype(self, dtypes: list[DtypeObj]) -> DtypeObj | None:
         """

@@ -2,3 +2,5 @@
 *docs\_*
 *docs/_*
 *.pyc
+h5pandas/h5datatype_2.py
+h5pandas/h5datatype_old.py
