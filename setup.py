@@ -16,7 +16,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 setup(
     name="h5pandas",
     version="0.3",
-    description="Demo library",
+    description="Load hdf5 into Pandas DataFrame instantaneously",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",
