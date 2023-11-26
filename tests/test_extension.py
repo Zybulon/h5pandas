@@ -113,15 +113,31 @@ def TestH5extensions():
 def TestH5Group():
     arr = np.random.rand(3000, 5)
     df = pd.DataFrame(arr)
-    with h5py.File("toto3.h5", "w", libver='latest') as f:
-        d = f.create_dataset('toto', data=df)
+    df_named = pd.DataFrame(arr, columns=['é', 'b', 'c', 'd', 'e'], index=range(1000, 4000))
 
-    with h5pandas.File("toto3.h5", "r", libver='latest') as f:
-        df = f['toto']
+    df.to_hdf("foobar.h5", "random_fixed", format="fixed", mode="w")
+    df.to_hdf("foobar.h5", "random_table", format="table")
+    df_named.to_hdf("foobar.h5", "named_random_fixed", format="fixed")
+    df_named.to_hdf("foobar.h5", "named_random_table", format="table")
+
+    with h5pandas.File("foobar.h5", "a", libver='latest') as f:
+        f.create_dataset('h5pandas', data=df)
+        f.create_dataset('h5pandas_named', data=df_named)
+
+    with h5pandas.File("foobar.h5", "r", libver='latest') as f:
+        df = f['h5pandas']
         print(df)
         print(type(df))
 
+        df = f['named_random_fixed']
+
+        print(f['random_fixed'], type(f['random_fixed']))
+
+        print(f['random_table'], type(f['random_table']))
+
+        print(f['named_random_fixed'], type(f['named_random_fixed']))
+
 
 if __name__ == '__main__':
-    TestH5extensions()
-    # TestH5Group()
+    # TestH5extensions()
+    TestH5Group()

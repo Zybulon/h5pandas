@@ -2,6 +2,8 @@
 import numpy as np
 import pandas
 from h5pandas.h5array import HDF5ExtensionArray
+import h5py
+import pandas
 
 
 def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
@@ -41,11 +43,71 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
         else:
             columns = (None,)*dataset.shape[1]
 
+    columns_decoded = [None]*len(columns)
+    for i, col in enumerate(columns):
+        if isinstance(col, (bytes, np.bytes_)):
+            columns_decoded[i] = col.decode()
+        else:
+            columns_decoded[i] = col
+
     # we create a Series for each column
-    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col, copy=False) for i, col in enumerate(columns))
+    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col, copy=False) for i, col in enumerate(columns_decoded))
 
     # concatenate the series into a DataFrame
     return pandas.concat(series, copy=copy, axis=1)
+
+
+def group_to_dataframe(group) -> pandas.DataFrame:
+    """
+    Transform a group into a DataFrame.
+
+    Parameters
+    ----------
+    group : h5py.group
+        The group to convert into a DataFrame.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataFrame backed by the dataset.
+        If you change the dataset values, the DataFrame will cbe changed.
+    """
+    # First option : the dataframe has been written by pandas (PyTables) with format = "fixed" or "table"
+    if "pandas_type" in group.attrs:
+        if group.attrs["pandas_type"] == b"frame":
+            return _group_fixed_to_dataframe(group)
+        elif group.attrs["pandas_type"] == b"frame_table":
+            return _group_table_to_dataframe(group)
+
+    # Second option : all the datasets have the same length, each is one is a serie
+    try:
+        return _group_with_column_to_dataframe(group)
+    except ValueError:
+        pass
+
+    raise ValueError("Group could not be converted into a DataFrame")
+
+
+def _group_with_column_to_dataframe(group) -> pandas.DataFrame:
+    series = []
+    for dataset_name in group:
+        dataset = group[dataset_name]
+        if not isinstance(dataset, h5py.dataset):
+            raise ValueError("All child of the group must be datasets")
+        if "columns" in dataset.attrs:
+            raise ValueError("This dataset contains several columns")
+        series.append(pandas.Series(HDF5ExtensionArray(dataset), name=dataset_name, copy=False))
+
+    # concatenate the series into a DataFrame
+    return pandas.concat(series, axis=1)
+
+
+def _group_fixed_to_dataframe(group) -> pandas.DataFrame:
+    return dataset_to_dataframe(group["block0_values"], columns=group["axis0"], index=group["axis1"])
+
+
+def _group_table_to_dataframe(group) -> pandas.DataFrame:
+    raise NotImplementedError
 
 
 @pandas.api.extensions.register_dataframe_accessor("h5")

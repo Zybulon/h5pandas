@@ -1,7 +1,7 @@
 """Very thin overlay over h5py library."""
 
 import numpy as np
-from h5pandas.dataframe import dataset_to_dataframe
+from h5pandas.dataframe import dataset_to_dataframe, group_to_dataframe
 import h5py
 try:
     from pandas import DataFrame
@@ -46,13 +46,16 @@ class Group(h5py.Group):
         """Convert item into DataFrame before returning it."""
         item = super().__getitem__(*args, **kwargs)
         if isinstance(item, h5py.Group):
-            return Group(item)
+            try:
+                return group_to_dataframe(item)
+            except Exception:
+                return Group(item)
         elif isinstance(item, h5py.Dataset):
             try:
                 return dataset_to_dataframe(item)
             except Exception:
                 return item
-        print("type d'item non géré")
+        print("Item type not managed")
         return item
 
     def __getattribute__(self, name):
