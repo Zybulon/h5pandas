@@ -12,7 +12,7 @@ import pytest
 
 
 # class TestCasting(base.BaseCastingTests):
-#     # 7 failed, 4 passed, 1 skipped
+#     # 6 failed, 5 passed, 1 skipped
 #     pass
 
 
@@ -60,7 +60,6 @@ import pytest
 
 
 # class TestGroupby(base.BaseGroupbyTests):
-
 #     # 12 passed
 #     pass
 
@@ -76,7 +75,7 @@ import pytest
 
 
 # class TestMethods(base.BaseMethodsTests):
-#     # 37 failed, 71 passed, 1 skipped, 4 errors
+#     # 35 failed, 73 passed, 1 skipped, 4 errors
 #     pass
 
 
@@ -86,17 +85,13 @@ import pytest
 
 
 # class TestArithmeticOps(base.BaseArithmeticOpsTests):
-
 #     series_scalar_exc: type[Exception] | None = None
 #     frame_scalar_exc: type[Exception] | None = None
 #     series_array_exc: type[Exception] | None = None
 #     divmod_exc: type[Exception] | None = None
-# divmod_exc = None
-# series_scalar_exc = None
-# frame_scalar_exc = None
-# series_array_exc = None
-# 5 failed, 79 passed
-# pass
+
+#     # 5 failed, 79 passed
+#     pass
 
 
 # class TestComparisonOps(base.BaseComparisonOpsTests):
@@ -128,17 +123,17 @@ import pytest
 #     # 26 failed, 20 passed, 6 skipped, 16 warnings
 #     def _supports_reduction(self, obj, op_name: str) -> bool:
 #         # Specify if we expect this reduction to succeed.
-# return True
-# pass
+#         return True
+#     pass
 
 
-class TestNumericReduce(base.BaseNumericReduceTests):
-    # 26 failed, 16 passed, 10 skipped, 16 warnings
-    pass
+# class TestNumericReduce(base.BaseNumericReduceTests):
+#     # 26 failed, 16 passed, 10 skipped, 16 warnings
+#     pass
 
 
 # class TestReshaping(base.BaseReshapingTests):
-#     # 15 failed, 17 passed
+#     # 13 failed, 19 passed
 #     pass
 
 
