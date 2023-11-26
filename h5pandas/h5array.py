@@ -228,7 +228,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         if is_scalar(item):
             try:
                 if self._dataset.ndim > 1:
-                    return self._dataset[item, self._column_index]
+                    return self._dataset[item, self._column_index, ...]
                 else:
                     return self._dataset[item]
             except (ValueError, TypeError):
@@ -239,14 +239,14 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
             return HDF5ExtensionArray(self._dataset, self._column_index)
         elif isinstance(item, tuple) and (slice(None) in item or Ellipsis in item):
             if self._dataset.ndim > 1:
-                dataset = self._dataset[*item, self._column_index]
+                dataset = self._dataset[*item, self._column_index, ...]
             else:
                 dataset = self._dataset[*item]
             return HDF5ExtensionArray(dataset)
         else:
             # FIXME : AVOID COPY HERE
             if self._dataset.ndim > 1:
-                dataset = self._dataset[item, self._column_index]
+                dataset = self._dataset[item, self._column_index, ...]
             else:
                 dataset = self._dataset[item]
             return HDF5ExtensionArray(dataset)
@@ -295,7 +295,11 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         # Note, also, that Series/DataFrame.where internally use __setitem__
         # on a copy of the data.
         # FIXME
-        return self._dataset.__setitem__((key, self._column_index), value)
+
+        if self._dataset.ndim > 1:
+            return self._dataset.__setitem__((key, self._column_index, Ellipsis), value)
+        else:
+            return self._dataset.__setitem__(key, value)
 
     def __len__(self) -> int:
         """
@@ -450,7 +454,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         return num_array
 
     # def __array__(self, *args, **kwargs):
-    #     return self._dataset[:, self._column_index]
+    #     return self._dataset[:, self._column_index, ...]
 
     # ------------------------------------------------------------------------
     # Required attributes
@@ -483,12 +487,12 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         """The number of bytes needed to store this object in memory."""
         # If this is expensive to compute, return an approximate lower bound
         # on the number of bytes needed.
-        return NotImplemented
+        return self.__len__()*self.dtype._numpy_dtype.itemsize
 
     @property
     def _ndarray(self):
         if self._dataset.ndim > 1:
-            return self._dataset[:, self._column_index]
+            return self._dataset[:, self._column_index, ...]
         else:
             return self._dataset
 
@@ -700,7 +704,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         return type(self)(abs(self._ndarray))
 
     def memory_usage(self, *args, **kwargs):
-        return 0
+        return self.nbytes
 
     # error: Signature of "__eq__" incompatible with supertype "object"
     def __eq__(self, other: Any) -> ArrayLike:  # type: ignore[override]
