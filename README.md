@@ -47,9 +47,9 @@ df0 = pd.DataFrame([[0.09, 0.91, 0.23, 0.01, 0.02, 0.06],
                     [0.08, 0.64, 0.31, 0.98, 0.63, 0.05],
                     [0.74, 0.93, 0.76, 0.54, 0.03, 0.07],
                     [0.79, 0.98, 0.51, 0.73, 0.13, 0.31]],
-                   columns=["f", "o", "o", "b", "a", "r"])
+                   columns=["f", "o", "o", "ß", "a", "r"])
 
-# you can write a DataFrame into a HDF5 file with create_dataset
+# You can write a DataFrame into a HDF5 file with create_dataset
 # Inside the file, the columns names are saved as attribute of the dataset.
 with h5pandas.File("foo.h5", "w") as file:
     df = file.create_dataset('bar', data=df0)
@@ -63,7 +63,7 @@ with h5pandas.File("foo.h5", "r") as file:
     delta = df - df0
 
     # you can still change columns names after DataFrame creation (it won't change them on the disk).
-    df.columns = ["a", "b", "c", "d", "e", "g"]
+    df.columns = ["a", "b", "c", "d", "é", "g"]
 
     # With the "h5" accessor you can access to ...
     # The file
@@ -78,5 +78,4 @@ with h5pandas.File("foo.h5", "r") as file:
 with h5py.File("foo.h5", "r") as file:
     dataset = file['/bar']
     df = h5pandas.dataset_to_dataframe(dataset, ["a", "b", "c", "d", "e", "g"])
-
 ```
