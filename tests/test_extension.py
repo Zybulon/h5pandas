@@ -36,7 +36,6 @@ def TestH5extensions():
         assert (d[0, 1] != 2.)
 
         t1 = time.time()
-        # assert on time to make sure the file is not loaded
         print(d.dtype, t1-t0)
         t0 = time.time()
 
@@ -44,6 +43,7 @@ def TestH5extensions():
         df = dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
         t1 = time.time()
         print(df, t1-t0)
+        # assert on time to make sure the file is not loaded
         assert (t1-t0 < 0.02)
         d[0, 0] = 0
         assert (df.loc[0, 'a'] == 0)
@@ -126,18 +126,11 @@ def TestH5Group():
 
     with h5pandas.File("foobar.h5", "r", libver='latest') as f:
         df = f['h5pandas']
-        print(df)
         print(type(df))
 
         df = f['named_random_fixed']
 
-        print(f['random_fixed'], type(f['random_fixed']))
-
-        print(f['random_table'], type(f['random_table']))
-
-        print(f['named_random_fixed'], type(f['named_random_fixed']))
-
 
 if __name__ == '__main__':
-    # TestH5extensions()
+    TestH5extensions()
     TestH5Group()

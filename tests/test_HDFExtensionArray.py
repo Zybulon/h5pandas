@@ -65,7 +65,7 @@ import pytest
 
 
 # class TestInterface(base.BaseInterfaceTests):
-#     #   1 failed, 13 passed
+#     #  14 passed
 #     pass
 
 
@@ -74,9 +74,9 @@ import pytest
 #     pass
 
 
-# class TestMethods(base.BaseMethodsTests):
-#     # 35 failed, 73 passed, 1 skipped, 4 errors
-#     pass
+class TestMethods(base.BaseMethodsTests):
+    # 32 failed, 77 passed, 4 errors
+    pass
 
 
 # class TestMissing(base.BaseMissingTests):

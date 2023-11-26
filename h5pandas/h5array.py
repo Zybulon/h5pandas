@@ -5,7 +5,7 @@ import uuid
 from h5pandas.h5datatype import HDF5Dtype
 import numbers
 from functools import cached_property
-
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,6 +16,11 @@ from typing import (
 )
 
 import pandas
+
+from pandas import (
+    Index,
+    Series,
+)
 
 from pandas.compat.numpy import function as nv
 
@@ -64,6 +69,8 @@ from pandas._typing import (
     TimeNonexistent,
     npt,
 )
+
+from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 
 
 class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.ExtensionArray):
@@ -547,7 +554,7 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         -------
         ExtensionArray
         """
-        return HDF5ExtensionArray(self._ndarray)
+        return HDF5ExtensionArray(np.array(self._ndarray))
 
     def _accumulate(self, name: str, *, skipna: bool = True, **kwargs):
         """
@@ -683,6 +690,35 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
 
     # ------------------------------------------------------------------------
     # Ops
+
+    def value_counts(self, dropna: bool = True) -> Series:
+        """
+        Return a Series containing counts of unique values.
+
+        Parameters
+        ----------
+        dropna : bool, optional
+            Don't include counts of NaN. The default is True.
+
+        Returns
+        -------
+        Series
+            value_counts.
+
+        """
+        values = _ensure_arraylike(self._ndarray, func_name="value_counts")
+        keys, counts, _ = value_counts_arraylike(values, dropna)
+        if keys.dtype == np.float16:
+            keys = keys.astype(np.float32)
+
+        # For backwards compatibility, we let Index do its normal type
+        #  inference, _except_ for if if infers from object to bool.
+        idx = Index(keys)
+        if idx.dtype == bool and keys.dtype == object:
+            idx = idx.astype(object)
+
+        result = Series(counts, index=idx, copy=False)
+        return result
 
     def argsort(self):
         return type(self)(np.argsort(self._ndarray))
