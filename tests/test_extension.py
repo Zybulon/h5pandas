@@ -20,7 +20,6 @@ def TestH5extensions():
         t0 = time.time()
         t00 = t0
         d = f.create_dataset('toto', data=arr)
-        f.flush()
 
         # very basic transformation in hdf5array
         array = HDF5ExtensionArray(d, 0)
@@ -61,7 +60,7 @@ def TestH5extensions():
         cosb_2 = np.cos(b)
         print(cosb)
         assert all(cosb == cosb_2)
-        print('Test cos', time.time()-t0)
+        print('Test cos', time.time() - t0)
         t0 = time.time()
 
         print('Test reduce std')
@@ -98,11 +97,11 @@ def TestH5extensions():
 
         # print(df.h5.attrs.keys())
 
-        # Tester opérations avec skipna
+        # Tester operations with skipna
 
-        # Tester hasna
+        # Test hasna
 
-        # Tester d'autres types
+        # Test other types
 
         # Test casting from a type to another
 
