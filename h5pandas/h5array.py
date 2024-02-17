@@ -14,6 +14,16 @@ from typing import (
     Sequence,
     cast,
 )
+from pandas._typing import (
+    AxisInt,
+    Dtype,
+    FillnaOptions,
+    InterpolateOptions,
+    NpDtype,
+    Scalar,
+    Self,
+    npt,
+)
 
 import pandas
 
@@ -73,9 +83,11 @@ from pandas._typing import (
 from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 
 
-class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.ExtensionArray):
+class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray):
 
-    _HANDLED_TYPES = (np.ndarray, numbers.Number, list)
+    _HANDLED_TYPES = (np.ndarray, numbers.Number)
+    # __pandas_priority__ = 5000
+    # __array_priority__ = 1000
 
     def __init__(self, dataset: h5py.Dataset, column_index: int = 0, dtype=None) -> None:
         """
@@ -637,38 +649,43 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         # https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperatorsMixin.html
         # The primary modification is not boxing scalar return values
         # in NumpyExtensionArray, since pandas' ExtensionArrays are 1-d.
+        if any(
+            isinstance(other, (ABCSeries, ABCIndex, ABCDataFrame)) for other in inputs
+        ):
+            return NotImplemented
 
         # Operations likes cos are much faster with ufunc
         out = kwargs.get("out", ())
 
+        inputs = tuple(inp._ndarray if isinstance(inp, HDF5ExtensionArray) else inp for inp in inputs)
+
         result = arraylike.maybe_dispatch_ufunc_to_dunder_op(
-            self, ufunc, method, *inputs, **kwargs
+            self._ndarray, ufunc, method, *inputs, **kwargs
         )
         if result is not NotImplemented:
-            return result
+            if ufunc.nout > 1:
+                # multiple return values; re-box array-like results
+                return tuple(type(self)(x) for x in result)
+            else:
+                return type(self)(result)
 
         if "out" in kwargs:
             # e.g. test_ufunc_unary
             return arraylike.dispatch_ufunc_with_out(
-                self, ufunc, method, *inputs, **kwargs
+                self._ndarray, ufunc, method, *inputs, **kwargs
             )
 
         if method == "reduce":
             result = arraylike.dispatch_reduction_ufunc(
-                self, ufunc, method, *inputs, **kwargs
+                self._ndarray, ufunc, method, *inputs, **kwargs
             )
             if result is not NotImplemented:
                 # e.g. tests.series.test_ufunc.TestNumpyReductions
-                return result
+                return type(self)(result)
 
         # Defer to the implementation of the ufunc on unwrapped values.
-        inputs = tuple(
-            x._ndarray if isinstance(x, HDF5ExtensionArray) else x for x in inputs
-        )
         if out:
-            kwargs["out"] = tuple(
-                x._ndarray if isinstance(x, HDF5ExtensionArray) else x for x in out
-            )
+            kwargs["out"] = tuple(inputs)
         result = getattr(ufunc, method)(*inputs, **kwargs)
 
         if ufunc.nout > 1:
@@ -721,23 +738,56 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         return result
 
     def argsort(self):
+        """Return for indices of sorted values."""
         return type(self)(np.argsort(self._ndarray))
 
-    def __invert__(self):
-        """Return for `~self`."""
-        return type(self)(~self._ndarray)
+    def argmin(self):
+        """Return for indice of min value."""
+        return type(self)(np.argmin(self._ndarray))
 
-    def __neg__(self):
-        """Return for `-self`."""
-        return type(self)(-self._ndarray)
+    def argmax(self):
+        """Return for indice of max value."""
+        return type(self)(np.argmax(self._ndarray))
 
-    def __pos__(self):
-        """Return for `+self`."""
-        return type(self)(+self._ndarray)
+    def dropna(self):
+        """Remove missing values."""
+        return type(self)(self._ndarray[~np.isna(self._ndarray)])
 
-    def __abs__(self):
-        """Return for `abs(self)`."""
-        return type(self)(abs(self._ndarray))
+    def interpolate(
+        self,
+        *,
+        method: InterpolateOptions,
+        axis: int,
+        index: Index,
+        limit,
+        limit_direction,
+        limit_area,
+        copy: bool,
+        **kwargs,
+    ):
+        """
+        See NDFrame.interpolate.__doc__.
+        """
+        # NB: we return type(self) even if copy=False
+        if not copy:
+            out_data = self._ndarray
+        else:
+            out_data = self._ndarray.copy()
+
+        # TODO: assert we have floating dtype?
+        missing.interpolate_2d_inplace(
+            out_data,
+            method=method,
+            axis=axis,
+            index=index,
+            limit=limit,
+            limit_direction=limit_direction,
+            limit_area=limit_area,
+            **kwargs,
+        )
+        if not copy:
+            return self
+        return type(self)._simple_new(out_data, dtype=self.dtype)
 
     def memory_usage(self, *args, **kwargs):
         return self.nbytes
@@ -756,131 +806,182 @@ class HDF5ExtensionArray(pandas.core.arraylike.OpsMixin, pandas.api.extensions.E
         else:
             return HDF5ExtensionArray(self._ndarray == other)
 
-    # error: Signature of "__ne__" incompatible with supertype "object"
-    def __ne__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self != other` (element-wise in -equality)."""
-        return type(self)(self._ndarray != other)
+    # def __invert__(self):
+    #     """Return for `~self`."""
+    #     return type(self)(~self._ndarray)
 
-    # error: Signature of "__ne__" incompatible with supertype "object"
+    # def __neg__(self):
+    #     """Return for `-self`."""
+    #     return type(self)(-self._ndarray)
 
-    def __lt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray < other)
+    # def __pos__(self):
+    #     """Return for `+self`."""
+    #     return type(self)(+self._ndarray)
 
-    def __gt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray > other)
+    # def __abs__(self):
+    #     """Return for `abs(self)`."""
+    #     return type(self)(abs(self._ndarray))
 
-    def __le__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray <= other)
+    # # error: Signature of "__ne__" incompatible with supertype "object"
+    # def __ne__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+    #     """Return for `self != other` (element-wise in -equality)."""
+    #     return type(self)(self._ndarray != other)
 
-    def __ge__(self, other: Any) -> ArrayLike:  # type: ignore[override]
-        """Return for `self < other` (element-wise in -equality)."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray >= other)
+    # # error: Signature of "__ne__" incompatible with supertype "object"
 
-    def __add__(self, other: Any) -> ArrayLike:
-        """Return for `self + other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray + other)
+    # def __lt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+    #     """Return for `self < other` (element-wise in -equality)."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray < other)
 
-    def __radd__(self, other: Any) -> ArrayLike:
-        """Return for `other + self`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(other + self._ndarray)
+    # def __gt__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+    #     """Return for `self < other` (element-wise in -equality)."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray > other)
 
-    def __sub__(self, other: Any) -> ArrayLike:
-        """Return for `self - other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray - other)
+    # def __le__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+    #     """Return for `self < other` (element-wise in -equality)."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray <= other)
 
-    def __rsub__(self, other: Any) -> ArrayLike:
-        """Return for `other - self`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(other - self._ndarray)
+    # def __ge__(self, other: Any) -> ArrayLike:  # type: ignore[override]
+    #     """Return for `self < other` (element-wise in -equality)."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray >= other)
 
-    def __mod__(self, other: Any) -> ArrayLike:
-        """Return for `self % other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray % other)
+    # def __add__(self, other: Any) -> ArrayLike:
+    #     """Return for `self + other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray + other)
 
-    def __mul__(self, other: Any) -> ArrayLike:
-        """Return for `self * other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray * other)
+    # def __radd__(self, other: Any) -> ArrayLike:
+    #     """Return for `other + self`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(other + self._ndarray)
 
-    def __truediv__(self, other: Any) -> ArrayLike:
-        """Return for `self / other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray / other)
+    # def __sub__(self, other: Any) -> ArrayLike:
+    #     """Return for `self - other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray - other)
 
-    def __floordiv__(self, other: Any) -> ArrayLike:
-        """Return for `self // other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray // other)
+    # def __rsub__(self, other: Any) -> ArrayLike:
+    #     """Return for `other - self`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(other - self._ndarray)
 
-    def __lshift__(self, value: Any) -> ArrayLike:
-        """Return for `self << other`."""
-        if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray << value)
+    # def __mod__(self, other: Any) -> ArrayLike:
+    #     """Return for `self % other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray % other)
 
-    def __rshift__(self, value: Any) -> ArrayLike:
-        """Return for `self >> other`."""
-        if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray >> value)
+    # def __divmod__(self, other: Any) -> ArrayLike:
+    #     """Return for `self % other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(np.divmod(self, other))
 
-    def __and__(self, other: Any) -> ArrayLike:
-        """Return for `self & other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray & other)
+    # def __rdivmod__(self, other: Any) -> ArrayLike:
+    #     """Return for `other % self`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(np.divmod(other, self))
 
-    def __or__(self, other: Any) -> ArrayLike:
-        """Return for `self | other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray | other)
+    # # def __mul__(self, other: Any) -> ArrayLike:
+    # #     """Return for `self * other`."""
+    # #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    # #         return NotImplemented
+    # #     else:
+    # #         return type(self)(self._ndarray * other)
 
-    def __xor__(self, other: Any) -> ArrayLike:
-        """Return for `self ^ other`."""
-        if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
-            return NotImplemented
-        else:
-            return type(self)(self._ndarray ^ other)
+    # def __rmul__(self, other: Any) -> ArrayLike:
+    #     """Return for `other * self`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(other * self._ndarray)
+
+    # def __truediv__(self, other: Any) -> ArrayLike:
+    #     """Return for `self / other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray / other)
+
+    # def __floordiv__(self, other: Any) -> ArrayLike:
+    #     """Return for `self // other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray // other)
+
+    # def __rfloordiv__(self, other: Any) -> ArrayLike:
+    #     """Return for `other // self`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(other // self._ndarray)
+
+    # def __lshift__(self, value: Any) -> ArrayLike:
+    #     """Return for `self << other`."""
+    #     if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray << value)
+
+    # def __rshift__(self, value: Any) -> ArrayLike:
+    #     """Return for `self >> other`."""
+    #     if isinstance(value, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray >> value)
+
+    # def __and__(self, other: Any) -> ArrayLike:
+    #     """Return for `self & other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray & other)
+
+    # def __rand__(self, other: Any) -> ArrayLike:
+    #     """Return for `self & other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(other & self._ndarray)
+
+    # def __or__(self, other: Any) -> ArrayLike:
+    #     """Return for `self | other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray | other)
+
+    # def __xor__(self, other: Any) -> ArrayLike:
+    #     """Return for `self ^ other`."""
+    #     if isinstance(other, (pandas.Series, pandas.Index, pandas.DataFrame)):
+    #         return NotImplemented
+    #     else:
+    #         return type(self)(self._ndarray ^ other)
 
     # Additional functions that are copy of the NumpyExtensionArray functions
 

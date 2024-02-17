@@ -16,7 +16,7 @@ HDF5Dtype("i8")
 
 def TestH5extensions():
     arr = np.random.rand(30000, 5)
-    with h5py.File("toto2.h5", "w", libver='latest') as f:
+    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
         t0 = time.time()
         t00 = t0
         d = f.create_dataset('toto', data=arr)
@@ -59,7 +59,9 @@ def TestH5extensions():
         cosb = np.cos(df["b"])
         cosb_2 = np.cos(b)
         print(cosb)
+
         assert all(cosb == cosb_2)
+        cosb > cosb_2
         print('Test cos', time.time() - t0)
         t0 = time.time()
 
@@ -109,6 +111,40 @@ def TestH5extensions():
     print('Total time : ', time.time() - t00)
 
 
+def test_rmul():
+    arr = np.random.rand(3000, 5)
+    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
+        d = f.create_dataset('toto', data=arr)
+        df = dataset_to_dataframe(d)
+
+        t0 = time.time()
+        df[0]*2.1
+        tf = time.time()
+        print("rmul = ", tf-t0)
+
+        # t0 = time.time()
+        # 3*df[0]
+        # tf = time.time()
+        print("rmul = ", tf-t0)
+
+
+def test_op_2EA():
+    arr = np.random.rand(3000, 5)
+    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
+        d = f.create_dataset('toto', data=arr)
+        df = dataset_to_dataframe(d)
+        df[0] - df[0]
+
+
+def test_add():
+    arr = np.random.rand(3000, 5)
+    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
+        d = f.create_dataset('toto', data=arr)
+        df = dataset_to_dataframe(d)
+
+        ser = df[0]
+        ser2 = ser + (-57.0)
+
 def TestH5Group():
     arr = np.random.rand(3000, 5)
     df = pd.DataFrame(arr)
@@ -125,7 +161,6 @@ def TestH5Group():
 
     with h5pandas.File("foobar.h5", "r", libver='latest') as f:
         df = f['h5pandas']
-        print(type(df))
 
         df = f['named_random_fixed']
 
@@ -133,3 +168,6 @@ def TestH5Group():
 if __name__ == '__main__':
     TestH5extensions()
     TestH5Group()
+    test_rmul()
+    test_op_2EA()
+    test_add()
