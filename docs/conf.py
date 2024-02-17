@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'h5pandas'
-copyright = '2023, Frédéric MASSON'
+copyright = '2024, Frédéric MASSON'
 author = 'Frédéric MASSON'
 release = h5pandas.__version__
 
