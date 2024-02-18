@@ -153,5 +153,10 @@ class DatasetAccessor:
 
     @property
     def attrs(self):
-        """Return the file backing the Pandas Object."""
+        """Return the attributes of the dataset backing the Pandas Object."""
         return self._values._dataset.attrs
+
+    @property
+    def name(self):
+        """Return the name of the dataset backing the Pandas Object."""
+        return self._values._dataset.name
