@@ -466,6 +466,8 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         """
         # We do the copy anyway
         num_array = self._ndarray
+        if dtype is None:
+            return num_array
         try:
             num_array = num_array.view(dtype)
         except TypeError:
