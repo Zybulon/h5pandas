@@ -38,11 +38,11 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
     # if no columns we try to find columns or we construct a tuple of None
     if columns is None:
         if "columns" in dataset.attrs:
-            columns = tuple(np.char.decode(dataset.attrs['columns']))
+            columns = tuple(np.char.decode(dataset.attrs["columns"]))
         else:
-            columns = (None,)*dataset.shape[1]
+            columns = (None,) * dataset.shape[1]
 
-    columns_decoded = [None]*len(columns)
+    columns_decoded = [None] * len(columns)
     for i, col in enumerate(columns):
         if isinstance(col, (bytes, np.bytes_)):
             columns_decoded[i] = col.decode()
@@ -50,7 +50,10 @@ def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):
             columns_decoded[i] = col
 
     # we create a Series for each column
-    series = (pandas.Series(HDF5ExtensionArray(dataset, i), name=col, copy=False) for i, col in enumerate(columns_decoded))
+    series = (
+        pandas.Series(HDF5ExtensionArray(dataset, i), name=col, copy=False)
+        for i, col in enumerate(columns_decoded)
+    )
 
     # concatenate the series into a DataFrame
     return pandas.concat(series, copy=copy, axis=1)
@@ -95,14 +98,18 @@ def _group_with_column_to_dataframe(group) -> pandas.DataFrame:
             raise ValueError("All child of the group must be datasets")
         if "columns" in dataset.attrs:
             raise ValueError("This dataset contains several columns")
-        series.append(pandas.Series(HDF5ExtensionArray(dataset), name=dataset_name, copy=False))
+        series.append(
+            pandas.Series(HDF5ExtensionArray(dataset), name=dataset_name, copy=False)
+        )
 
     # concatenate the series into a DataFrame
     return pandas.concat(series, axis=1)
 
 
 def _group_fixed_to_dataframe(group) -> pandas.DataFrame:
-    return dataset_to_dataframe(group["block0_values"], columns=group["axis0"], index=group["axis1"])
+    return dataset_to_dataframe(
+        group["block0_values"], columns=group["axis0"], index=group["axis1"]
+    )
 
 
 def _group_table_to_dataframe(group) -> pandas.DataFrame:

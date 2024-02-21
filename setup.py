@@ -9,7 +9,7 @@ from os import path
 HERE = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
+with open(path.join(HERE, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 # This call to setup() does all the work
@@ -29,9 +29,9 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.11",
-        "Operating System :: OS Independent"
+        "Operating System :: OS Independent",
     ],
     packages=["h5pandas"],
     include_package_data=True,
-    install_requires=["h5py", "pandas>=2.1.0"]
+    install_requires=["h5py", "pandas>=2.1.0"],
 )

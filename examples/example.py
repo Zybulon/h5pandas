@@ -24,25 +24,29 @@ import h5py
 import h5pandas
 import pandas as pd
 
-df0 = pd.DataFrame([[0.09, 0.91, 0.23, 0.01, 0.02, 0.06],
-                    [0.85, 0.67, 0.17, 0.25, 0.19, 0.11],
-                    [0.92, 0.14, 0.52, 0.50, 0.43, 0.26],
-                    [0.47, 0.47, 0.48, 0.72, 0.71, 0.12],
-                    [0.05, 0.60, 0.12, 0.19, 0.20, 0.69],
-                    [0.08, 0.64, 0.31, 0.98, 0.63, 0.05],
-                    [0.74, 0.93, 0.76, 0.54, 0.03, 0.07],
-                    [0.79, 0.98, 0.51, 0.73, 0.13, 0.31]],
-                   columns=["f", "o", "o", "ß", "a", "r"])
+df0 = pd.DataFrame(
+    [
+        [0.09, 0.91, 0.23, 0.01, 0.02, 0.06],
+        [0.85, 0.67, 0.17, 0.25, 0.19, 0.11],
+        [0.92, 0.14, 0.52, 0.50, 0.43, 0.26],
+        [0.47, 0.47, 0.48, 0.72, 0.71, 0.12],
+        [0.05, 0.60, 0.12, 0.19, 0.20, 0.69],
+        [0.08, 0.64, 0.31, 0.98, 0.63, 0.05],
+        [0.74, 0.93, 0.76, 0.54, 0.03, 0.07],
+        [0.79, 0.98, 0.51, 0.73, 0.13, 0.31],
+    ],
+    columns=["f", "o", "o", "ß", "a", "r"],
+)
 
 # You can write a DataFrame into a HDF5 file with create_dataset
 # Inside the file, the columns names are saved as attribute of the dataset.
 with h5pandas.File("foo.h5", "w") as file:
-    df = file.create_dataset('bar', data=df0)
+    df = file.create_dataset("bar", data=df0)
 
 # Later you can retrieve your dataFrame with exactly the same columns names (instead of having datasets with h5py).
 # If the data was not written with h5pandas, you will have a DataFrame but with no names
 with h5pandas.File("foo.h5", "r") as file:
-    df = file['/bar']
+    df = file["/bar"]
 
     # These DataFrames can operate with "classic" DataFrames
     delta = df - df0
@@ -61,5 +65,5 @@ with h5pandas.File("foo.h5", "r") as file:
 
 # If you already have a dataset from h5py you can convert it into a DataFrame with dataset_to_dataframe
 with h5py.File("foo.h5", "r") as file:
-    dataset = file['/bar']
+    dataset = file["/bar"]
     df = h5pandas.dataset_to_dataframe(dataset, ["a", "b", "c", "d", "e", "g"])

@@ -26,7 +26,7 @@ ExtensionDtypeT = TypeVar("ExtensionDtypeT", bound="ExtensionDtype")
 
 @register_extension_dtype
 class HDF5Dtype(ExtensionDtype):
-    """ Ok"""
+    """Ok"""
 
     _metadata: tuple[str, ...] = ()
 
@@ -161,6 +161,7 @@ class HDF5Dtype(ExtensionDtype):
         type
         """
         from h5pandas import HDF5ExtensionArray
+
         return HDF5ExtensionArray
 
     def empty(self, shape: Shape) -> type_t[ExtensionArray]:
@@ -227,6 +228,7 @@ class HDF5Dtype(ExtensionDtype):
         ...         )
         """
         import re
+
         pattern = re.compile(r"^(\w+)\[HDF5\]$")
         match = pattern.match(string)
         if match:
@@ -306,7 +308,7 @@ class HDF5Dtype(ExtensionDtype):
         -------
         bool
         """
-        return self._numpy_dtype == np.dtype('bool')
+        return self._numpy_dtype == np.dtype("bool")
 
     def _get_common_dtype(self, dtypes: list[DtypeObj]) -> DtypeObj | None:
         """

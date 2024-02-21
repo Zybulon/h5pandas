@@ -136,6 +136,6 @@ import pytest
 #     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # retcode = pytest.main(["test_extension.py"])
     retcode = pytest.main(["test_HDFExtensionArray.py"])

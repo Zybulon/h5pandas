@@ -54,13 +54,16 @@ from pandas._typing import (
 from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 
 
-class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray):
-
+class HDF5ExtensionArray(
+    np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray
+):
     _HANDLED_TYPES = (np.ndarray, numbers.Number)
     # __pandas_priority__ = 5000
     # __array_priority__ = 1000
 
-    def __init__(self, dataset: h5py.Dataset, column_index: int = 0, dtype=None) -> None:
+    def __init__(
+        self, dataset: h5py.Dataset, column_index: int = 0, dtype=None
+    ) -> None:
         """
         Create a HDF5ExtensionArray from a dataset and a column number.
 
@@ -113,7 +116,9 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         self._dtype = HDF5Dtype(self._dataset.dtype)
 
     @classmethod
-    def _from_sequence(cls, scalars, *, dtype: np.dtype | None = None, copy: bool = False):
+    def _from_sequence(
+        cls, scalars, *, dtype: np.dtype | None = None, copy: bool = False
+    ):
         """
         Construct a new ExtensionArray from a sequence of scalars.
 
@@ -222,8 +227,10 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
                 else:
                     return self._dataset[item]
             except (ValueError, TypeError):
-                raise IndexError("only integers, slices (`:`), ellipsis (`...`), numpy.newaxis "
-                                 "(`None`) and integer or boolean arrays are valid indices")
+                raise IndexError(
+                    "only integers, slices (`:`), ellipsis (`...`), numpy.newaxis "
+                    "(`None`) and integer or boolean arrays are valid indices"
+                )
 
         elif isinstance(item, slice) and item == slice(None):
             return HDF5ExtensionArray(self._dataset, self._column_index)
@@ -362,11 +369,26 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         Returns:
             H5pyArray: The concatenated H5pyArray.
         """
-        f = h5py.File("h5pyArray_concat{}".format(uuid.uuid4()), 'w', libver='latest', driver="core", backing_store=False, locking=False)
+        f = h5py.File(
+            "h5pyArray_concat{}".format(uuid.uuid4()),
+            "w",
+            libver="latest",
+            driver="core",
+            backing_store=False,
+            locking=False,
+        )
         # TODO : utiliser l'argument out ?
 
-        array = np.concatenate([subdataset._dataset[()] for subdataset in to_concat], axis=0)
-        dataset = f.create_dataset("extension", data=array, shape=(len(array), 1), maxshape=(None, None), chunks=(len(array), 1))
+        array = np.concatenate(
+            [subdataset._dataset[()] for subdataset in to_concat], axis=0
+        )
+        dataset = f.create_dataset(
+            "extension",
+            data=array,
+            shape=(len(array), 1),
+            maxshape=(None, None),
+            chunks=(len(array), 1),
+        )
 
         return cls(dataset)
 
@@ -479,7 +501,7 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         """The number of bytes needed to store this object in memory."""
         # If this is expensive to compute, return an approximate lower bound
         # on the number of bytes needed.
-        return self.__len__()*self.dtype._numpy_dtype.itemsize
+        return self.__len__() * self.dtype._numpy_dtype.itemsize
 
     @property
     def _ndarray(self):
@@ -512,7 +534,9 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         except Exception:
             pass
 
-        return HDF5ExtensionArray(self._ndarray.astype(dtype), self._column_index, dtype=dtype)
+        return HDF5ExtensionArray(
+            self._ndarray.astype(dtype), self._column_index, dtype=dtype
+        )
 
     def take(self, indices, allow_fill=False, fill_value=None):
         from pandas.core.algorithms import take
@@ -527,8 +551,7 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         # type for the array, to the physical storage type for
         # the data, before passing to take.
 
-        result = take(data, indices, fill_value=fill_value,
-                      allow_fill=allow_fill)
+        result = take(data, indices, fill_value=fill_value, allow_fill=allow_fill)
         return self._from_sequence(result, dtype=self.dtype)
 
     def copy(self):
@@ -630,7 +653,10 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         # Operations likes cos are much faster with ufunc
         out = kwargs.get("out", ())
 
-        inputs = tuple(inp._ndarray if isinstance(inp, HDF5ExtensionArray) else inp for inp in inputs)
+        inputs = tuple(
+            inp._ndarray if isinstance(inp, HDF5ExtensionArray) else inp
+            for inp in inputs
+        )
 
         result = arraylike.maybe_dispatch_ufunc_to_dunder_op(
             self._ndarray, ufunc, method, *inputs, **kwargs
@@ -968,7 +994,9 @@ class HDF5ExtensionArray( np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extens
         keepdims: bool = False,
         skipna: bool = True,
     ):
-        nv.validate_stat_ddof_func((), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="sem")
+        nv.validate_stat_ddof_func(
+            (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="sem"
+        )
         result = nanops.nansem(self._ndarray, axis=axis, skipna=skipna, ddof=ddof)
         return self._wrap_reduction_result(axis, result)
 

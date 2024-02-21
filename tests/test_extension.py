@@ -16,41 +16,43 @@ HDF5Dtype("i8")
 
 def TestH5extensions():
     arr = np.random.rand(30000, 5)
-    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
+    with h5py.File(
+        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
         t0 = time.time()
         t00 = t0
-        d = f.create_dataset('toto', data=arr)
+        d = f.create_dataset("toto", data=arr)
 
         # very basic transformation in hdf5array
         array = HDF5ExtensionArray(d, 0)
-        d[0, 0] = 1.
-        assert (array[0] == 1.)
+        d[0, 0] = 1.0
+        assert array[0] == 1.0
 
         # transformation into a series
-        ser = pd.Series(array, name='toto', copy=False)
+        ser = pd.Series(array, name="toto", copy=False)
         ser.memory_usage()
-        d[0, 0] = 2.
-        array[0] = 2.
-        assert (ser[0] == 2.)
-        assert (d[0, 1] != 2.)
+        d[0, 0] = 2.0
+        array[0] = 2.0
+        assert ser[0] == 2.0
+        assert d[0, 1] != 2.0
 
         t1 = time.time()
-        print(d.dtype, t1-t0)
+        print(d.dtype, t1 - t0)
         t0 = time.time()
 
         df = dataset_to_dataframe(d)
         df = dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
         t1 = time.time()
-        print(df, t1-t0)
+        print(df, t1 - t0)
         # assert on time to make sure the file is not loaded
-        assert (t1-t0 < 0.02)
+        assert t1 - t0 < 0.02
         d[0, 0] = 0
-        assert (df.loc[0, 'a'] == 0)
+        assert df.loc[0, "a"] == 0
         t0 = time.time()
         b = df["b"]
 
         ind = b < 0.5
-        print(ind, time.time()-t0)
+        print(ind, time.time() - t0)
         t0 = time.time()
 
         b = df["b"]
@@ -62,17 +64,17 @@ def TestH5extensions():
 
         assert all(cosb == cosb_2)
         cosb > cosb_2
-        print('Test cos', time.time() - t0)
+        print("Test cos", time.time() - t0)
         t0 = time.time()
 
-        print('Test reduce std')
+        print("Test reduce std")
         res = b.std()
-        print('Test std', time.time()-t0)
+        print("Test std", time.time() - t0)
         t0 = time.time()
 
-        print('Test accumulate cumsum')
+        print("Test accumulate cumsum")
         b.cumsum()
-        print('Test cumsum', time.time()-t0)
+        print("Test cumsum", time.time() - t0)
         t0 = time.time()
 
         # test groupby
@@ -80,21 +82,21 @@ def TestH5extensions():
         result = df.groupby("a", as_index=True)
         b = result.b
         b.mean()
-        print('Test groupby', time.time()-t0)
+        print("Test groupby", time.time() - t0)
 
         t0 = time.time()
-        result = df[(df['a'] < 0.5) & (df['b'] > 0.5)]
+        result = df[(df["a"] < 0.5) & (df["b"] > 0.5)]
         result.c.mean()
-        print('test loc :', time.time()-t0)
+        print("test loc :", time.time() - t0)
         t0 = time.time()
 
         # print(df.h5.file)
 
-        df["z"] = df["a"] + df["b"]*df["c"]
-        df["y"] = df["a"] - df["b"]/df["c"]
+        df["z"] = df["a"] + df["b"] * df["c"]
+        df["y"] = df["a"] - df["b"] / df["c"]
         df["z"] = df["a"] % df["b"]
         df["z"] = df["a"] % df["b"]
-        print('Test basic operations', time.time()-t0)
+        print("Test basic operations", time.time() - t0)
         t0 = time.time()
 
         # print(df.h5.attrs.keys())
@@ -108,64 +110,73 @@ def TestH5extensions():
         # Test casting from a type to another
 
     # print(b)
-    print('Total time : ', time.time() - t00)
+    print("Total time : ", time.time() - t00)
 
 
 def test_rmul():
     arr = np.random.rand(3000, 5)
-    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
-        d = f.create_dataset('toto', data=arr)
+    with h5py.File(
+        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
+        d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
 
         t0 = time.time()
-        df[0]*2.1
+        df[0] * 2.1
         tf = time.time()
-        print("rmul = ", tf-t0)
+        print("rmul = ", tf - t0)
 
         # t0 = time.time()
         # 3*df[0]
         # tf = time.time()
-        print("rmul = ", tf-t0)
+        print("rmul = ", tf - t0)
 
 
 def test_op_2EA():
     arr = np.random.rand(3000, 5)
-    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
-        d = f.create_dataset('toto', data=arr)
+    with h5py.File(
+        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
+        d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
         df[0] - df[0]
 
 
 def test_add():
     arr = np.random.rand(3000, 5)
-    with h5py.File("toto2.h5", "w", libver='latest', driver='core', backing_store=False) as f:
-        d = f.create_dataset('toto', data=arr)
+    with h5py.File(
+        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
+        d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
 
         ser = df[0]
         ser2 = ser + (-57.0)
 
+
 def TestH5Group():
     arr = np.random.rand(3000, 5)
     df = pd.DataFrame(arr)
-    df_named = pd.DataFrame(arr, columns=['é', 'b', 'c', 'd', 'e'], index=range(1000, 4000))
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=range(1000, 4000)
+    )
 
     df.to_hdf("foobar.h5", "random_fixed", format="fixed", mode="w")
     df.to_hdf("foobar.h5", "random_table", format="table")
     df_named.to_hdf("foobar.h5", "named_random_fixed", format="fixed")
     df_named.to_hdf("foobar.h5", "named_random_table", format="table")
 
-    with h5pandas.File("foobar.h5", "a", libver='latest') as f:
-        f.create_dataset('h5pandas', data=df)
-        f.create_dataset('h5pandas_named', data=df_named)
+    with h5pandas.File("foobar.h5", "a", libver="latest") as f:
+        f.create_dataset("h5pandas", data=df)
+        f.create_dataset("h5pandas_named", data=df_named)
 
-    with h5pandas.File("foobar.h5", "r", libver='latest') as f:
-        df = f['h5pandas']
+    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+        df = f["h5pandas"]
 
-        df = f['named_random_fixed']
+        df = f["named_random_fixed"]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     TestH5extensions()
     TestH5Group()
     test_rmul()

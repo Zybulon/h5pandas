@@ -3,6 +3,7 @@
 import numpy as np
 from h5pandas.dataframe import dataset_to_dataframe, group_to_dataframe
 import h5py
+
 try:
     from pandas import DataFrame
 except ModuleNotFoundError:
@@ -34,7 +35,7 @@ class Group(h5py.Group):
         """
         """"""
         if isinstance(group_id, h5py.File):
-            id = group_id['/']._id
+            id = group_id["/"]._id
         elif isinstance(group_id, (h5py.h5f.FileID, h5py.h5g.GroupID)):
             id = group_id
         elif isinstance(group_id, h5py.Group):
@@ -67,7 +68,16 @@ class Group(h5py.Group):
             item = Group(item)
         return item
 
-    def create_dataset(self, name, shape=None, dtype=None, data=None, index=None, columns=None, **kwargs):
+    def create_dataset(
+        self,
+        name,
+        shape=None,
+        dtype=None,
+        data=None,
+        index=None,
+        columns=None,
+        **kwargs,
+    ):
         """
         Create a DataFrame.
 
@@ -98,7 +108,9 @@ class Group(h5py.Group):
             The newly create DataFrame.
 
         """
-        dataset = super().create_dataset(name, shape=shape, dtype=dtype, data=data, **kwargs)
+        dataset = super().create_dataset(
+            name, shape=shape, dtype=dtype, data=data, **kwargs
+        )
         # we look for columns name inside the dataFrame
         if isinstance(data, DataFrame) and columns is None:
             columns = list(data.columns)

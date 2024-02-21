@@ -15,10 +15,11 @@ from pandas.core import ops
 
 from h5pandas import HDF5ExtensionArray
 from h5pandas import HDF5Dtype
+
 # from pandas.core.dtypes.dtypes import PandasDtype
 import numpy as np
 
-dtyp_numpy = np.dtype('f8')
+dtyp_numpy = np.dtype("f8")
 dtyp = HDF5Dtype(dtyp_numpy)
 
 
@@ -36,13 +37,13 @@ def data():
     * data[0] and data[1] should both be non missing
     * data[0] and data[1] should not be equal
     """
-    return HDF5ExtensionArray(np.arange(-57, -57+100, dtype=dtyp_numpy))
+    return HDF5ExtensionArray(np.arange(-57, -57 + 100, dtype=dtyp_numpy))
 
 
 @pytest.fixture
 def data_for_twos():
     """Length-100 array in which all the elements are two."""
-    return HDF5ExtensionArray(2*np.ones(100))
+    return HDF5ExtensionArray(2 * np.ones(100))
 
 
 @pytest.fixture
@@ -115,8 +116,10 @@ def na_cmp():
 
     By default, uses ``operator.is_``
     """
+
     def comp(a, b):
         return np.isnan(a) and np.isnan(b)
+
     return comp
 
 
@@ -135,7 +138,9 @@ def data_for_grouping():
 
     Where A < B < C and NA is missing
     """
-    return HDF5ExtensionArray([1.8, 1.8, dtyp.na_value, dtyp.na_value, -26, -26, 1.8, 3])
+    return HDF5ExtensionArray(
+        [1.8, 1.8, dtyp.na_value, dtyp.na_value, -26, -26, 1.8, 3]
+    )
 
 
 @pytest.fixture(params=[True, False])
@@ -220,7 +225,6 @@ def using_copy_on_write() -> bool:
     Fixture to check if Copy-on-Write is enabled.
     """
     return options.mode.copy_on_write and options.mode.data_manager == "block"
-
 
 
 # ----------------------------------------------------------------
@@ -418,5 +422,3 @@ def all_numeric_accumulations(request):
     Fixture for numeric accumulation names
     """
     return request.param
-
-
