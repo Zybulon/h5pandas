@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests of HDF5Extension Array."""
-from pandas.tests.extension import base
 
 
 import operator

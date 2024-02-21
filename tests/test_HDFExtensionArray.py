@@ -2,7 +2,6 @@
 h5pandas tests.
 """
 
-from pandas.tests.extension import base
 import pytest
 
 

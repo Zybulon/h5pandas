@@ -3,7 +3,6 @@ import numpy as np
 import pandas
 from h5pandas.h5array import HDF5ExtensionArray
 import h5py
-import pandas
 
 
 def dataset_to_dataframe(dataset, columns=None, index=None, copy=False):

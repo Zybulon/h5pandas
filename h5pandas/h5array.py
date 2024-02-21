@@ -4,25 +4,14 @@ import h5py
 import uuid
 from h5pandas.h5datatype import HDF5Dtype
 import numbers
-from functools import cached_property
-import warnings
 from typing import (
-    TYPE_CHECKING,
     Any,
-    Callable,
-    Literal,
-    Sequence,
-    cast,
 )
 from pandas._typing import (
     AxisInt,
     Dtype,
-    FillnaOptions,
     InterpolateOptions,
     NpDtype,
-    Scalar,
-    Self,
-    npt,
 )
 
 import pandas
@@ -36,11 +25,6 @@ from pandas.compat.numpy import function as nv
 
 from pandas._libs import lib
 from pandas.core.dtypes.common import (
-    is_array_like,
-    is_bool_dtype,
-    is_integer,
-    is_list_like,
-    is_object_dtype,
     is_scalar,
 )
 
@@ -48,12 +32,9 @@ from pandas.core import (
     arraylike,
     nanops,
     missing,
-    roperator,
 )
 from pandas.core.indexers import (
     check_array_indexer,
-    unpack_tuple_and_ellipses,
-    validate_indices,
 )
 
 from pandas.core.dtypes.generic import (
@@ -66,18 +47,8 @@ from pandas.core.dtypes.missing import isna
 
 from pandas._typing import (
     ArrayLike,
-    AxisInt,
-    Dtype,
-    FillnaOptions,
     Iterator,
-    NpDtype,
     PositionalIndexer,
-    Scalar,
-    SortKind,
-    TakeIndexer,
-    TimeAmbiguous,
-    TimeNonexistent,
-    npt,
 )
 
 from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
