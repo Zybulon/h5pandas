@@ -18,7 +18,7 @@ def dataframe_to_hdf5(
 
     Parameters
     ----------
-    dataframe : `pandas.DataFrame`
+    dataframe : pandas.DataFrame
         The dataframe to write.
     h5file : str or `h5py.File` or `h5py.Group`
         If it is a string : the name of the HDF5 file in which the dataframe will be written.
@@ -35,7 +35,7 @@ def dataframe_to_hdf5(
 
     Returns
     -------
-    dataset : `h5py.dataset`
+    dataset : h5py.dataset
         The dataset created inside h5file.
     """
     columns = dataframe.columns.values
@@ -60,7 +60,7 @@ def ndarray_to_hdf5(
 
     Parameters
     ----------
-    array : `np.ndarray`
+    array : np.ndarray
         The array to write.
     h5file : str or `h5py.File` or `h5py.Group`
         If it is a string : the name of the HDF5 file in which the dataframe will be written.
@@ -81,7 +81,7 @@ def ndarray_to_hdf5(
 
     Returns
     -------
-    dataset : `h5py.dataset`
+    dataset : h5py.dataset
         The dataset created inside h5file.
     """
     from numpy.lib import recfunctions as rfn

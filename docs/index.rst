@@ -29,3 +29,4 @@ Welcome to h5pandas documentation!
    source/api/h5array
    source/api/h5datatype
    source/api/group
+   source/api/dataframe
