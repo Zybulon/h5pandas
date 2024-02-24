@@ -2,6 +2,7 @@
 
 import numpy as np
 from h5pandas.dataframe import dataset_to_dataframe, group_to_dataframe
+from h5pandas import HDF5Dtype
 import h5py
 
 try:
@@ -87,20 +88,7 @@ class Group(h5py.Group):
 
         Parameters
         ----------
-        name : TYPE
-            DESCRIPTION.
-        shape : TYPE, optional
-            DESCRIPTION. The default is None.
-        dtype : TYPE, optional
-            DESCRIPTION. The default is None.
-        data : TYPE, optional
-            DESCRIPTION. The default is None.
-        index : TYPE, optional
-            DESCRIPTION. The default is None.
-        columns : TYPE, optional
-            DESCRIPTION. The default is None.
-        kwargs : TYPE
-            DESCRIPTION.
+        columns : `list`, optional
 
         Returns
         -------
@@ -108,6 +96,8 @@ class Group(h5py.Group):
             The newly create DataFrame.
 
         """
+        if isinstance(data.dtypes.iloc[0], HDF5Dtype):
+            data = data.to_numpy(copy=False, dtype=data.dtypes.iloc[0].type)
         dataset = super().create_dataset(
             name, shape=shape, dtype=dtype, data=data, **kwargs
         )
@@ -115,7 +105,6 @@ class Group(h5py.Group):
         if isinstance(data, DataFrame) and columns is None:
             columns = list(data.columns)
         # Write columns name inside the dataFrame
-        # TODO : decode it with :
         if columns is not None:
             dataset.attrs["columns"] = np.char.encode(np.array(columns).astype(str))
 

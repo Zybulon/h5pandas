@@ -1,7 +1,7 @@
 """
 Sandbox Tests.
 """
-
+import os
 import numpy as np
 import h5pandas
 from h5pandas import dataset_to_dataframe
@@ -120,16 +120,7 @@ def test_rmul():
     ) as f:
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
-
-        t0 = time.time()
         df[0] * 2.1
-        tf = time.time()
-        print("rmul = ", tf - t0)
-
-        # t0 = time.time()
-        # 3*df[0]
-        # tf = time.time()
-        print("rmul = ", tf - t0)
 
 
 def test_op_2EA():
@@ -151,7 +142,23 @@ def test_add():
         df = dataset_to_dataframe(d)
 
         ser = df[0]
-        ser2 = ser + (-57.0)
+        ser + (-57.0)
+
+
+def test_write_hdf5():
+    arr = np.random.rand(3000, 5)
+    with h5py.File(
+        "foobar2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
+        df0 = pd.DataFrame(arr)
+        d = f.create_dataset("toto", data=arr)
+        df = dataset_to_dataframe(d)
+        df._values
+        d2 = h5pandas.dataframe_to_hdf5(df, "foobar3.h5")
+        df2 = dataset_to_dataframe(d2)
+        assert (df2._values == df0._values).all()
+    d2.file.close()
+    os.remove("foobar3.h5")
 
 
 def TestH5Group():
@@ -161,19 +168,31 @@ def TestH5Group():
         arr, columns=["é", "b", "c", "d", "e"], index=range(1000, 4000)
     )
 
-    df.to_hdf("foobar.h5", "random_fixed", format="fixed", mode="w")
-    df.to_hdf("foobar.h5", "random_table", format="table")
-    df_named.to_hdf("foobar.h5", "named_random_fixed", format="fixed")
-    df_named.to_hdf("foobar.h5", "named_random_table", format="table")
+    df.to_hdf("foobar.h5", key="random_fixed", format="fixed", mode="w")
+    df.to_hdf("foobar.h5", key="random_table", format="table")
+    df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
+    df_named.to_hdf("foobar.h5", key="named_random_table", format="table")
 
     with h5pandas.File("foobar.h5", "a", libver="latest") as f:
         f.create_dataset("h5pandas", data=df)
         f.create_dataset("h5pandas_named", data=df_named)
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
-        df = f["h5pandas"]
+        df_random_fixed = f["random_fixed"]
+        assert (df._values == df_random_fixed._values).all()
 
-        df = f["named_random_fixed"]
+        df_named_random_fixed = f["named_random_fixed"]
+        assert (df_named._values == df_named_random_fixed._values).all()
+        assert (df_named.columns == df_named_random_fixed.columns).all()
+
+        df_h5pandas = f["h5pandas"]
+        assert (df._values == df_h5pandas._values).all()
+
+        df_h5pandas_named = f["h5pandas_named"]
+        assert (df_named._values == df_h5pandas_named._values).all()
+        assert (df_named.columns == df_h5pandas_named.columns).all()
+
+    os.remove("foobar.h5")
 
 
 if __name__ == "__main__":
@@ -182,3 +201,4 @@ if __name__ == "__main__":
     test_rmul()
     test_op_2EA()
     test_add()
+    test_write_hdf5()
