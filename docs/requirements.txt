@@ -3,3 +3,4 @@ recommonmark
 sphinx-book-theme
 pandas>=2.1.0
 h5py
+h5pandas
