@@ -5,7 +5,7 @@ from h5pandas.h5array import HDF5ExtensionArray
 import h5py
 
 
-def dataframe_to_hdf5(
+def dataframe_to_hdf(
     dataframe: pandas.DataFrame,
     h5file: str | h5py.Group,
     dataset_name: str = "dataframe",

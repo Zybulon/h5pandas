@@ -43,8 +43,8 @@ df0 = pd.DataFrame(
     index=["a", "b", "c", "d", "e", "f", "g", "h"],
 )
 
-# The function dataframe_to_hdf5 is the easiest way to write a DataFrame into a HDF5
-h5pd.dataframe_to_hdf5(df0, "foo.h5", "foo")
+# The function dataframe_to_hdf is the easiest way to write a DataFrame into a HDF5
+h5pd.dataframe_to_hdf(df0, "foo.h5", "foo")
 
 # If you are more familiar with h5py syntax, you can write a DataFrame into a HDF5 file with create_dataset
 # Inside the file, the columns names are saved as attribute of the dataset.
