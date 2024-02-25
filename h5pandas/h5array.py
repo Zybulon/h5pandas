@@ -467,8 +467,11 @@ class HDF5ExtensionArray(
             num_array = num_array.astype(dtype)
         return num_array
 
-    # def __array__(self, *args, **kwargs):
-    #     return self._dataset[:, self._column_index, ...]
+    def __array__(self, *args, **kwargs):
+        if self._dataset.ndim > 1:
+            return self._dataset[:, self._column_index, ...]
+        else:
+            return self._dataset
 
     # ------------------------------------------------------------------------
     # Required attributes
@@ -604,18 +607,29 @@ class HDF5ExtensionArray(
             )
         return meth(**kwargs)
 
-    def _reduce(self, name: str, *, skipna: bool = True, min_count=0, **kwargs):
+    def _reduce(
+        self, name: str, *, skipna: bool = True, keepdims: bool = False, **kwargs
+    ):
         """
         Return a scalar result of performing the reduction operation.
 
         Parameters
         ----------
-        name: str
+        name : str
             Name of the function, supported values are:
-            {any, all, min, max, sum, mean, median, prod,
-            std, var, sem, kurt, skew}.
-        skipna: bool, default True
+            { any, all, min, max, sum, mean, median, prod,
+            std, var, sem, kurt, skew }.
+        skipna : bool, default True
             If True, skip NaN values.
+        keepdims : bool, default False
+            If False, a scalar is returned.
+            If True, the result has dimension with size one along the reduced axis.
+
+            .. versionadded:: 2.1
+
+               This parameter is not required in the _reduce signature to keep backward
+               compatibility, but will become required in the future. If the parameter
+               is not found in the method signature, a FutureWarning will be emitted.
         **kwargs
             Additional keyword arguments passed to the reduction function.
             Currently, `ddof` is the only supported kwarg.
@@ -626,7 +640,12 @@ class HDF5ExtensionArray(
 
         Raises
         ------
-        TypeError: subclass does not define reductions
+        TypeError : subclass does not define reductions
+
+        Examples
+        --------
+        >>> pd.array([1, 2, 3])._reduce("min")
+        1
         """
         if skipna:
             meth = getattr(self._ndarray, name, None)
@@ -638,7 +657,10 @@ class HDF5ExtensionArray(
                 f"'{type(self).__name__}' with dtype {self.dtype} "
                 f"does not support reduction '{name}'"
             )
-        return meth(**kwargs)
+        result = meth(**kwargs)
+        if keepdims:
+            result = np.array([result])
+        return result
 
     def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs, **kwargs):
         # Lightly modified version of
@@ -704,9 +726,6 @@ class HDF5ExtensionArray(
             # one return value; re-box array-like results
             return type(self)(result)
 
-    # ------------------------------------------------------------------------
-    # Ops
-
     def value_counts(self, dropna: bool = True) -> Series:
         """
         Return a Series containing counts of unique values.
@@ -764,9 +783,7 @@ class HDF5ExtensionArray(
         copy: bool,
         **kwargs,
     ):
-        """
-        See NDFrame.interpolate.__doc__.
-        """
+        """See NDFrame.interpolate.__doc__."""
         # NB: we return type(self) even if copy=False
         if not copy:
             out_data = self._ndarray
