@@ -10,14 +10,15 @@ from h5pandas import HDF5ExtensionArray
 import h5py
 import time
 import pandas as pd
+import gc
 
 HDF5Dtype("i8")
 
 
-def TestH5extensions():
+def test_general_behavior():
     arr = np.random.rand(30000, 5)
     with h5py.File(
-        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+        "foobar.h5", "w", libver="latest", driver="core", backing_store=False
     ) as f:
         t0 = time.time()
         t00 = t0
@@ -37,13 +38,13 @@ def TestH5extensions():
         assert d[0, 1] != 2.0
 
         t1 = time.time()
-        print(d.dtype, t1 - t0)
+        print("Test opening file", t1 - t0)
         t0 = time.time()
 
         df = dataset_to_dataframe(d)
         df = dataset_to_dataframe(d, ["a", "b", "c", "d", "e"])
         t1 = time.time()
-        print(df, t1 - t0)
+        print("Test conversion", t1 - t0)
         # assert on time to make sure the file is not loaded
         assert t1 - t0 < 0.02
         d[0, 0] = 0
@@ -52,32 +53,29 @@ def TestH5extensions():
         b = df["b"]
 
         ind = b < 0.5
-        print(ind, time.time() - t0)
+        print("Test comparison", time.time() - t0)
         t0 = time.time()
 
         b = df["b"]
-        sub_df = df[ind]
-        mini = df["a"].min()
+        df[ind]
+        df["a"].min()
         cosb = np.cos(df["b"])
         cosb_2 = np.cos(b)
-        print(cosb)
 
         assert all(cosb == cosb_2)
         cosb > cosb_2
         print("Test cos", time.time() - t0)
         t0 = time.time()
 
-        print("Test reduce std")
-        res = b.std()
+        b.std()
         print("Test std", time.time() - t0)
         t0 = time.time()
 
-        print("Test accumulate cumsum")
         b.cumsum()
         print("Test cumsum", time.time() - t0)
         t0 = time.time()
 
-        # test groupby
+        # test groupby : bottleneck performances
         t0 = time.time()
         result = df.groupby("a", as_index=True)
         b = result.b
@@ -87,10 +85,8 @@ def TestH5extensions():
         t0 = time.time()
         result = df[(df["a"] < 0.5) & (df["b"] > 0.5)]
         result.c.mean()
-        print("test loc :", time.time() - t0)
+        print("Test loc :", time.time() - t0)
         t0 = time.time()
-
-        # print(df.h5.file)
 
         df["z"] = df["a"] + df["b"] * df["c"]
         df["y"] = df["a"] - df["b"] / df["c"]
@@ -99,9 +95,7 @@ def TestH5extensions():
         print("Test basic operations", time.time() - t0)
         t0 = time.time()
 
-        # print(df.h5.attrs.keys())
-
-        # Tester operations with skipna
+        # Test operations with skipna
 
         # Test hasna
 
@@ -116,7 +110,7 @@ def TestH5extensions():
 def test_rmul():
     arr = np.random.rand(3000, 5)
     with h5py.File(
-        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+        "foobar.h5", "w", libver="latest", driver="core", backing_store=False
     ) as f:
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
@@ -126,7 +120,7 @@ def test_rmul():
 def test_op_2EA():
     arr = np.random.rand(3000, 5)
     with h5py.File(
-        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+        "foobar.h5", "w", libver="latest", driver="core", backing_store=False
     ) as f:
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
@@ -136,7 +130,7 @@ def test_op_2EA():
 def test_add():
     arr = np.random.rand(3000, 5)
     with h5py.File(
-        "toto2.h5", "w", libver="latest", driver="core", backing_store=False
+        "foobar.h5", "w", libver="latest", driver="core", backing_store=False
     ) as f:
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
@@ -161,7 +155,22 @@ def test_write_hdf5():
     os.remove("foobar3.h5")
 
 
-def TestH5Group():
+def test_attributes():
+    arr = np.random.rand(3000, 5)
+    with h5py.File(
+        "foobar2.h5", "w", libver="latest", driver="core", backing_store=False
+    ) as f:
+        df0 = pd.DataFrame(arr)
+        df0.attrs = {"A": "A", "è": [1, 2, 3]}
+        d = f.create_dataset("toto", data=arr)
+        df = dataset_to_dataframe(d)
+        df._values
+        d2 = h5pandas.dataframe_to_hdf5(df, "foobar3.h5")
+        df2 = dataset_to_dataframe(d2)
+        assert (df2._values == df0._values).all()
+
+
+def test_retrieve_dataframe():
     arr = np.random.rand(3000, 5)
     df = pd.DataFrame(arr)
     df_named = pd.DataFrame(
@@ -182,23 +191,81 @@ def TestH5Group():
         assert (df._values == df_random_fixed._values).all()
 
         df_named_random_fixed = f["named_random_fixed"]
-        assert (df_named._values == df_named_random_fixed._values).all()
-        assert (df_named.columns == df_named_random_fixed.columns).all()
+        assert all(df_named == df_named_random_fixed)
 
         df_h5pandas = f["h5pandas"]
         assert (df._values == df_h5pandas._values).all()
 
         df_h5pandas_named = f["h5pandas_named"]
-        assert (df_named._values == df_h5pandas_named._values).all()
-        assert (df_named.columns == df_h5pandas_named.columns).all()
+        assert all(df_named == df_h5pandas_named)
 
     os.remove("foobar.h5")
 
 
+def test_retrieve_index_and_columns_string():
+    arr = np.random.rand(3000, 5)
+    index = [f"index_{i}" for i in range(1000, 4000)]
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+
+    df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
+    h5pandas.dataframe_to_hdf5(
+        df_named, "foobar.h5", dataset_name="named_random_h5pandas"
+    )
+
+    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+        df_named_random_fixed = f["named_random_fixed"]
+        assert all(df_named == df_named_random_fixed)
+
+        df_named_random_h5pandas = f["named_random_h5pandas"]
+        assert all(df_named == df_named_random_h5pandas)
+
+    gc.collect()
+    os.remove("foobar.h5")
+
+
+def test_retrieve_index_and_columns_int():
+    arr = np.random.rand(3000, 5)
+    df = pd.DataFrame(arr, columns=None, index=range(1000, 4000))
+
+    df.to_hdf("foobar.h5", key="random_fixed", format="fixed")
+    h5pandas.dataframe_to_hdf5(df, "foobar.h5", dataset_name="random_h5pandas")
+
+    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+        df_random_fixed = f["random_fixed"]
+        assert (df == df_random_fixed).all().all()
+
+        df_random_h5pandas = f["random_h5pandas"]
+        assert (df == df_random_h5pandas).all().all()
+
+    gc.collect()
+    os.remove("foobar.h5")
+
+
+def test_retrieve_attributes():
+    arr = np.random.rand(3000, 5)
+    index = [f"index_{i}" for i in range(1000, 4000)]
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named.attrs = {"A": "B", "C": [1, 2, 3], "D": ["E", "F"], "G": np.array([1.2, 2.4])}
+    h5pandas.dataframe_to_hdf5(df_named, "foobar.h5", dataset_name="dataframe")
+
+    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+        df_retrieved = f["dataframe"]
+        for key in df_named.attrs.keys():
+            if len(df_named.attrs[key]) and not isinstance(df_named.attrs[key], str):
+                assert all(df_named.attrs[key] == df_retrieved.attrs[key])
+            else:
+                assert df_named.attrs[key] == df_retrieved.attrs[key]
+    gc.collect()
+    os.remove("foobar.h5")
+
+
 if __name__ == "__main__":
-    TestH5extensions()
-    TestH5Group()
-    test_rmul()
-    test_op_2EA()
-    test_add()
-    test_write_hdf5()
+    # test_general_behavior()
+    # test_retrieve_dataframe()
+    test_retrieve_attributes()
+    # test_retrieve_index_and_columns_string()
+    # test_retrieve_index_and_columns_int()
+    # test_rmul()
+    # test_op_2EA()
+    # test_add()
+    # test_write_hdf5()
