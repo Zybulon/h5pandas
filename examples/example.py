@@ -51,8 +51,8 @@ h5pd.dataframe_to_hdf5(df0, "foo.h5", "foo")
 with h5pd.File("foo.h5", "a") as file:
     df = file.create_dataset("bar", data=df0)
 
-# Later you can retrieve your dataFrame with exactly the same columns names and index.
-# If the data was written with h5py, columns names and indexes are lost.
+# Later you can retrieve your dataFrame with exactly the same columns names, index and attributes.
+# If the data was written with h5py, columns names, indexes and attributes are lost.
 with h5pd.File("foo.h5", "r") as file:
     df = file["bar"]
 
