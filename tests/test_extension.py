@@ -148,7 +148,7 @@ def test_write_hdf5():
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
         df._values
-        d2 = h5pandas.dataframe_to_hdf5(df, "foobar3.h5")
+        d2 = h5pandas.dataframe_to_hdf(df, "foobar3.h5")
         df2 = dataset_to_dataframe(d2)
         assert (df2._values == df0._values).all()
     d2.file.close()
@@ -208,7 +208,7 @@ def test_retrieve_index_and_columns_string():
     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
 
     df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
-    h5pandas.dataframe_to_hdf5(
+    h5pandas.dataframe_to_hdf(
         df_named, "foobar.h5", dataset_name="named_random_h5pandas"
     )
 
@@ -228,7 +228,7 @@ def test_retrieve_index_and_columns_int():
     df = pd.DataFrame(arr, columns=None, index=range(1000, 4000))
 
     df.to_hdf("foobar.h5", key="random_fixed", format="fixed")
-    h5pandas.dataframe_to_hdf5(df, "foobar.h5", dataset_name="random_h5pandas")
+    h5pandas.dataframe_to_hdf(df, "foobar.h5", dataset_name="random_h5pandas")
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_random_fixed = f["random_fixed"]
@@ -251,7 +251,7 @@ def test_retrieve_attributes():
         "D": ["E", "F"],
         "G": np.array([1.2, 2.4]),
     }
-    h5pandas.dataframe_to_hdf5(df_named, "foobar.h5", dataset_name="dataframe")
+    h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_retrieved = f["dataframe"]
@@ -265,12 +265,12 @@ def test_retrieve_attributes():
 
 
 if __name__ == "__main__":
-    # test_general_behavior()
-    # test_retrieve_dataframe()
+    test_general_behavior()
+    test_retrieve_dataframe()
     test_retrieve_attributes()
-    # test_retrieve_index_and_columns_string()
-    # test_retrieve_index_and_columns_int()
-    # test_rmul()
-    # test_op_2EA()
-    # test_add()
-    # test_write_hdf5()
+    test_retrieve_index_and_columns_string()
+    test_retrieve_index_and_columns_int()
+    test_rmul()
+    test_op_2EA()
+    test_add()
+    test_write_hdf5()
