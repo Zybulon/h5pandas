@@ -245,7 +245,12 @@ def test_retrieve_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
-    df_named.attrs = {"A": "B", "C": [1, 2, 3], "D": ["E", "F"], "G": np.array([1.2, 2.4])}
+    df_named.attrs = {
+        "A": "B",
+        "C": [1, 2, 3],
+        "D": ["E", "F"],
+        "G": np.array([1.2, 2.4]),
+    }
     h5pandas.dataframe_to_hdf5(df_named, "foobar.h5", dataset_name="dataframe")
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
