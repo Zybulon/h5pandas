@@ -4,4 +4,4 @@ from .dataframe import dataset_to_dataframe, dataframe_to_hdf, ndarray_to_hdf5
 from h5py import *
 from .group import Group, File
 
-__version__ = "0.8"
+__version__ = "0.9"
