@@ -3,11 +3,12 @@ h5pandas tests.
 """
 
 import pytest
+from pandas.tests.extension import base
 
 
-# class TestConstructors(base.BaseConstructorsTests):
-#     # 15 passed/15
-#     pass
+class TestConstructors(base.BaseConstructorsTests):
+    # 15 passed/15
+    pass
 
 
 # class TestCasting(base.BaseCastingTests):
@@ -74,12 +75,12 @@ import pytest
 
 
 # class TestMethods(base.BaseMethodsTests):
-#     # 31 failed, 81 passed, 4 errors
+#     # 39 failed, 73 passed, 4 errors
 #     pass
 
 
 # class TestMissing(base.BaseMissingTests):
-#     # 24 passed
+#     # 1 failed, 23 passed
 #     pass
 
 
