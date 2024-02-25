@@ -4,7 +4,7 @@ from setuptools import setup
 # To use a consistent encoding
 from codecs import open
 from os import path
-import h5pandas
+from h5pandas import __version__
 
 # The directory containing this file
 HERE = path.abspath(path.dirname(__file__))
