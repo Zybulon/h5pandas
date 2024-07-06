@@ -4,6 +4,8 @@ import numpy as np
 import pandas
 from h5pandas.h5array import HDF5ExtensionArray
 import h5py
+import re
+_pattern_attr_serie = re.compile("series_attr_(.*)_(.*)")
 
 
 def dataframe_to_hdf(
@@ -200,7 +202,8 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
         else:
             columns = (None,) * dataset.shape[1]
 
-    columns_decoded = [None] * len(columns)
+    nb_columns = len(columns)
+    columns_decoded = [None] * nb_columns
     for i, col in enumerate(columns):
         if isinstance(col, (bytes, np.bytes_)):
             columns_decoded[i] = col.decode()
@@ -234,7 +237,12 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
             value = np.char.decode(value)
         except (AttributeError, TypeError):
             pass
-        dataframe.attrs[key] = value
+
+        # special case for Series Attributes
+        if m := _pattern_attr_serie.match(key):
+            dataframe[m[1]].attrs[m[2]] = value
+        else:
+            dataframe.attrs[key] = value
     return dataframe
 
 

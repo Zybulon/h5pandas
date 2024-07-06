@@ -16,7 +16,7 @@ HDF5Dtype("i8")
 
 
 def test_general_behavior():
-    arr = np.random.rand(30000, 5)
+    arr = np.random.rand(30000, 50)
     with h5py.File(
         "foobar.h5", "w", libver="latest", driver="core", backing_store=False
     ) as f:
@@ -241,7 +241,7 @@ def test_retrieve_index_and_columns_int():
     os.remove("foobar.h5")
 
 
-def test_retrieve_attributes():
+def test_retrieve_DataFrame_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
@@ -249,7 +249,6 @@ def test_retrieve_attributes():
         "A": "B",
         "C": [1, 2, 3],
         "D": ["E", "F"],
-        "G": np.array([1.2, 2.4]),
     }
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
@@ -264,10 +263,25 @@ def test_retrieve_attributes():
     os.remove("foobar.h5")
 
 
+
+def test_retrieve_Series_attributes():
+    arr = np.random.rand(3000, 5)
+    index = [f"index_{i}" for i in range(1000, 4000)]
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named["é"].attrs["foo"] = "bar"
+    h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
+
+    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+        df_retrieved = f["dataframe"]
+        assert df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"]
+    gc.collect()
+    os.remove("foobar.h5")
+
 if __name__ == "__main__":
     test_general_behavior()
     test_retrieve_dataframe()
-    test_retrieve_attributes()
+    test_retrieve_DataFrame_attributes()
+    test_retrieve_Series_attributes()
     test_retrieve_index_and_columns_string()
     test_retrieve_index_and_columns_int()
     test_rmul()

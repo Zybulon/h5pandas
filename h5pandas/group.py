@@ -147,8 +147,14 @@ class Group(h5py.Group):
 
                 data = rfn.structured_to_unstructured(data)
         elif isinstance(data, DataFrame):
-            # we look for properties inside the dataFrame
+            # We look for properties inside the dataFrame
             metadata = data.attrs | metadata
+            # We also look for attributes inside the series that are not in the dataset
+            for label, serie in data.items():
+                for key, value in serie.attrs.items():
+                    if key not in metadata:
+                        metadata[f"series_attr_{label}_{key}"] = value
+
             if columns is None:
                 columns = list(data.columns)
             if index is None:

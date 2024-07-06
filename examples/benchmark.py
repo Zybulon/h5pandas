@@ -146,6 +146,7 @@ gc.collect()
 
 os.remove(file1)
 os.remove(file2)
+os.remove(file3)
 
 # Plots
 
