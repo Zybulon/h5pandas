@@ -4,6 +4,7 @@ Created on Sun Feb 25 16:42:08 2024
 
 @author: Fred
 """
+
 import numpy as np
 import pandas as pd
 import h5pandas as h5pd
@@ -41,14 +42,14 @@ tracemalloc.start()
 t0 = time.time()
 file = h5pd.File(file1, mode="r")
 df1 = file["dataframe"]
-a = df1[0]*df1[2] + df1[1]
+a = df1[0] * df1[2] + df1[1]
 t1 = time.time()
 _, m1 = tracemalloc.get_traced_memory()
 gc.collect()
 tracemalloc.reset_peak()
 t2 = time.time()
 df2 = pd.read_hdf(file2, key="dataframe")
-a = df2[0]*df2[2] + df2[1]
+a = df2[0] * df2[2] + df2[1]
 t3 = time.time()
 _, m2 = tracemalloc.get_traced_memory()
 tracemalloc.stop()
@@ -65,15 +66,23 @@ os.remove(file2)
 # WTIH COMPRESSION
 # writing
 t0 = time.time()
-h5pd.dataframe_to_hdf(df, file1,  **hdf5plugin.Blosc(cname='blosclz', clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE))
+h5pd.dataframe_to_hdf(
+    df,
+    file1,
+    **hdf5plugin.Blosc(cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE),
+)
 t1 = time.time()
 df.to_hdf(file2, key="dataframe", complib="blosc:blosclz", complevel=5)
 t2 = time.time()
 df.to_feather(file3, compression="lz4", compression_level=5)
 t3 = time.time()
 
-write_time = [t1-t0, t2-t1, t3-t2]
-file_size = [os.stat(file1).st_size/1024**2,  os.stat(file2).st_size/1024**2,  os.stat(file3).st_size/1024**2]
+write_time = [t1 - t0, t2 - t1, t3 - t2]
+file_size = [
+    os.stat(file1).st_size / 1024**2,
+    os.stat(file2).st_size / 1024**2,
+    os.stat(file3).st_size / 1024**2,
+]
 
 print("\nWriting time with compression level 5 :")
 print(f"    h5pandas.dataframe_to_hdf : {t1-t0:.4}s for {file_size[0]:.6}MB")
@@ -84,20 +93,20 @@ print(f"    pandas.to_feather (pyarrow) : {t3-t2:.4}s for {file_size[2]:.6}MB")
 t0 = time.time()
 file = h5pd.File(file1, mode="r")
 df1 = file["dataframe"]
-a = df1[0]*df1[2] + df1[1]
+a = df1[0] * df1[2] + df1[1]
 t1 = time.time()
 
 t2 = time.time()
 df2 = pd.read_hdf(file2, key="dataframe")
-a = df2[0]*df2[2] + df2[1]
+a = df2[0] * df2[2] + df2[1]
 t3 = time.time()
 
 t4 = time.time()
 df3 = pd.read_feather(file3)
-a = df3[0]*df3[2] + df3[1]
+a = df3[0] * df3[2] + df3[1]
 t5 = time.time()
 
-read_time = [t1-t0, t3-t2, t5-t4]
+read_time = [t1 - t0, t3 - t2, t5 - t4]
 
 file.close()
 
@@ -107,25 +116,25 @@ gc.collect()
 tracemalloc.start()
 file = h5pd.File(file1, mode="r")
 df1 = file["dataframe"]
-a = df1[0]*df1[2] + df1[1]
+a = df1[0] * df1[2] + df1[1]
 _, m1 = tracemalloc.get_traced_memory()
 gc.collect()
 tracemalloc.reset_peak()
 
 df2 = pd.read_hdf(file2, key="dataframe")
-a = df2[0]*df2[2] + df2[1]
+a = df2[0] * df2[2] + df2[1]
 _, m2 = tracemalloc.get_traced_memory()
 gc.collect()
 tracemalloc.reset_peak()
 
 df3 = pd.read_feather(file3)
-a = df3[0]*df3[2] + df3[1]
+a = df3[0] * df3[2] + df3[1]
 _, m3 = tracemalloc.get_traced_memory()
 gc.collect()
 tracemalloc.stop()
 
-ram_usage = [m1/1024**2, m2/1024**2, m3/1024**2]
-read_time = [t1-t0, t3-t2, t5-t4]
+ram_usage = [m1 / 1024**2, m2 / 1024**2, m3 / 1024**2]
+read_time = [t1 - t0, t3 - t2, t5 - t4]
 
 print("\nOpening file with with compression :")
 print(f"    h5pandas.File : time = {t1-t0:.4}s  RAM = {ram_usage[0]:.6}MB")
@@ -135,25 +144,23 @@ print(f"    pandas.read_feather : time = {t5-t4:.4}s  RAM = {ram_usage[2]:.6}MB"
 file.close()
 gc.collect()
 
-# os.remove(file1)
-# os.remove(file2)
+os.remove(file1)
+os.remove(file2)
 
 # Plots
 
 
 def bar(nplot: int, values, units: str, title: str):
     """Bar plot of performances."""
-    libs = ('h5pandas\n(h5py)', 'pandas HDF5\n(PyTables)', 'pandas Feather\n(PyArrow)')
-    y_pos = np.arange(len(libs))
+    libs = ("h5pandas\n(h5py)", "pandas HDF5\n(PyTables)", "pandas Feather\n(PyArrow)")
     ax = plt.subplot(2, 2, nplot)
 
     bar = ax.bar(libs, values, width=0.4, color=["coral", "darkblue", "grey"])
     ax.set_ylabel(units)
     ax.set_title(title)
     labels = [f"{value:.1f}" for value in values]
-    print(labels)
     ax.bar_label(bar, labels)
-    ax.set_ylim([0, 1.15*ax.get_ylim()[1]])
+    ax.set_ylim([0, 1.15 * ax.get_ylim()[1]])
 
 
 plt.close("all")

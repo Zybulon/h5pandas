@@ -22,6 +22,7 @@ If you write a dataframe with h5pandas, columns names, index and attributes will
 h5pandas is also able to open HDF5 file written with pandas.to_hdf if fixed format was used.
 
 """
+
 import h5py
 import h5pandas as h5pd
 import pandas as pd

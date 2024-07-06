@@ -1,4 +1,5 @@
 """Pandas ExtensionDataType."""
+
 from pandas.api.extensions import register_extension_dtype, ExtensionDtype
 import numpy as np
 from pandas._libs.hashtable import object_hash
