@@ -143,7 +143,7 @@ gc.collect()
 
 def bar(nplot: int, values, units: str, title: str):
     """Bar plot of performances."""
-    libs = ('h5pandas\n(h5py)', 'pandas HDF5\n(PyTables)', 'pandas Feather\n(Arrow)')
+    libs = ('h5pandas\n(h5py)', 'pandas HDF5\n(PyTables)', 'pandas Feather\n(PyArrow)')
     y_pos = np.arange(len(libs))
     ax = plt.subplot(2, 2, nplot)
 
