@@ -114,15 +114,6 @@ These DataFrames can operate with "classic" DataFrames
     delta = df - df0
 ```
 
-With the "h5" accessor you can access to
-The file, the name of the dataset, dataset object (h5py), dataset object (h5py)
-```Python
-    df.h5.file
-    df.h5.name
-    df.h5.dataset
-    df.h5.attrs
-```
-
 ### h5py API
 Since h5pd is based on h5py, it has the same API.
 Therefore you can use h5pandas the same way you use h5py except that it provides `pandas.DataFrame` instead of `h5py.dataset` objects, even if the file has not been written with h5pandas.
@@ -172,8 +163,7 @@ These DataFrames can operate with "classic" DataFrames
     delta = df - df0
 ```
 
-With the "h5" accessor you can access to
-The file, the name of the dataset, dataset object (h5py), dataset object (h5py)
+With the "h5" accessor you can access to the file object, the name of the dataset, dataset object (h5py), dataset object (h5py)
 ```Python
     df.h5.file
     df.h5.name
