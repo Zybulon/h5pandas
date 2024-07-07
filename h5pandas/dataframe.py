@@ -219,14 +219,20 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
             except TypeError:
                 index = dataset.attrs["index"]
 
-    # we create a Series for each column
-    series = (
-        pandas.Series(HDF5ExtensionArray(dataset, i), index=index, name=col, copy=False)
-        for i, col in enumerate(columns_decoded)
-    )
+    # We use a manager to speed up the dataFrame creation 0.8s -> 0.2s
+    arrays = [HDF5ExtensionArray(dataset, i) for i, col in enumerate(columns_decoded)]
+    from pandas.core.internals.construction import arrays_to_mgr
 
-    # concatenate the series into a DataFrame
-    dataframe = pandas.concat(series, copy=copy, axis=1)
+    mgr = arrays_to_mgr(arrays, columns_decoded, index, dtype=None, typ="block", consolidate=copy)
+    dataframe = pandas.DataFrame._from_mgr(mgr, axes=[columns_decoded, index])
+
+    # Old method : maybe safer ? but much slower
+    # series = [
+    #     pandas.Series(HDF5ExtensionArray(dataset, i), index=index, name=col, copy=False)
+    #     for i, col in enumerate(columns_decoded)
+    # ]
+    # dataframe = pandas.concat(series, copy=copy, axis=1)
+
     # copy the dataset attrs into the dataframe attrs
     for key, value in dataset.attrs.items():
         if key in ("columns", "index"):
