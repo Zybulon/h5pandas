@@ -6,10 +6,12 @@ It also has convenient methods to write DataFrames directly into an HDF5 file.
 
 ## Table of Contents
 
-- [FAQ](#FAQ)
+- [FAQ](#faq)
 - [Readthedoc](#readthedoc)
 - [Installation](#installation)
 - [Getting started](#getting-started)
+    - [Pandas compatibilty](#pandas-compatibilty)
+    - [h5py API](#h5py-api)
 
 ## FAQ
 
@@ -48,12 +50,11 @@ That means you need to make sure the underlying file is never closed.
 - When you want to save a Dataframe into a HDF5 file.
 
 ### When not to use it ?
-- When you actually want to load all the data into memory (RAM).
 - If your data is scattered over thousands of small hdf5 files and you want to open them all.
 - When your data are not columns and therefore they cannot be represented by series.
 
 ## Files compatibilty
-h5pandas is fully compatible with h5py: you can write a dataset with one library and read with the other indifferently.
+h5pandas is fully compatible with h5py: you can write a dataset with one library and read with the other.
 
 h5pandas is able to open HDF5 file written with :
 - h5pandas
@@ -122,7 +123,8 @@ h5pandas is fully compatible with h5py: you can write a dataset with one library
 However, h5py does not deal with indexes and attributes while h5pandas does.
 
 #### Saving a file with h5py syntax
-If you are more familiar with h5py syntax, you can write a DataFrame into a HDF5 file with `create_dataset`
+If you are more familiar with h5py syntax, you can write a DataFrame into a HDF5 file with `create_dataset`.
+
 Inside the file, the columns names are saved as attribute of the dataset.
 
 ```Python
