@@ -1,4 +1,4 @@
-# h5pandas : lazy pandas DataFrames with h5py.
+# h5pandas : out-of-core pandas DataFrames with h5py.
 h5pandas is a thin overlay on top of h5py that provides pandas DataFrames instead of h5py datasets.
 
 The purpose of this library is to combine the power of Pandas' data manipulation with the efficiency of h5py and the HDF5 format.
@@ -33,7 +33,7 @@ Pandas already has a support for HDF5 files (with PyTables) but it requires to l
 file opening and that can be very time and memory consuming for large dataset/DataFrame.
 
 Instead, this library opens a file and create a Pandas DataFrame without actually reading the data.
-The data are read only when needed, this behavior is called "lazy DataFrame".
+The data are read only when needed, this behavior is called "out-of-core DataFrame".
 It allows to open very huge files (even larger than memory) instantaneously and with a very memory footprint (less than 1 MB).
 
 ### How it works ?
