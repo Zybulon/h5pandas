@@ -5,6 +5,7 @@ import pandas
 from h5pandas.h5array import HDF5ExtensionArray
 import h5py
 import re
+
 _pattern_attr_serie = re.compile("series_attr_(.*)_(.*)")
 
 
@@ -67,7 +68,7 @@ def dataframe_to_hdf(
     )
 
 
-def ndarray_to_hdf5(
+def ndarray_to_hdf(
     array: np.ndarray,
     h5file: str | h5py.Group,
     dataset_name: str = "array",
@@ -163,7 +164,9 @@ def _data_to_hf5(
     return dataframe.h5.dataset
 
 
-def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=False):
+def dataset_to_dataframe(
+    dataset: h5py.Dataset, columns=None, index=None, copy=False
+):
     """
     Transform a dataset into a DataFrame.
 
@@ -173,16 +176,18 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
         The dataset to convert into a DataFrame.
     columns : iterable, optional
         Column labels to use for resulting frame when data does not have them,
-        defaulting to RangeIndex(0, 1, 2, ..., n). If data contains column labels,
-        will perform column selection instead.
+        defaulting to RangeIndex(0, 1, 2, ..., n).
+        If data contains column labels, will perform column selection instead.
     index : Index or array-like, optional
         Index to use for resulting frame. Will default to RangeIndex if
         no indexing information part of input data and no index provided.
     copy : bool, optional
         Copy data from inputs.
-        For dict data, the default of None behaves like ``copy=True``.  For DataFrame
-        or 2d ndarray input, the default of None behaves like ``copy=False``.
-        If data is a dict containing one or more Series (possibly of different dtypes),
+        For dict data, the default of None behaves like ``copy=True``.
+        For DataFrame or 2d ndarray input, the default of None behaves like
+        ``copy=False``.
+        If data is a dict containing one or more Series (possibly of different
+        dtypes),
         ``copy=False`` will ensure that these inputs are not copied.
 
     Returns
@@ -220,10 +225,19 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
                 index = dataset.attrs["index"]
 
     # We use a manager to speed up the dataFrame creation 0.8s -> 0.2s
-    arrays = [HDF5ExtensionArray(dataset, i) for i, col in enumerate(columns_decoded)]
+    arrays = [
+        HDF5ExtensionArray(dataset, i) for i, col in enumerate(columns_decoded)
+    ]
     from pandas.core.internals.construction import arrays_to_mgr
 
-    mgr = arrays_to_mgr(arrays, columns_decoded, index, dtype=None, typ="block", consolidate=copy)
+    mgr = arrays_to_mgr(
+        arrays,
+        columns_decoded,
+        index,
+        dtype=None,
+        typ="block",
+        consolidate=copy,
+    )
     dataframe = pandas.DataFrame._from_mgr(mgr, axes=[columns_decoded, index])
 
     # Old method : maybe safer ? but much slower
@@ -292,7 +306,9 @@ def _group_with_column_to_dataframe(group) -> pandas.DataFrame:
         if "columns" in dataset.attrs:
             raise ValueError("This dataset contains several columns")
         series.append(
-            pandas.Series(HDF5ExtensionArray(dataset), name=dataset_name, copy=False)
+            pandas.Series(
+                HDF5ExtensionArray(dataset), name=dataset_name, copy=False
+            )
         )
 
     # concatenate the series into a DataFrame
@@ -308,14 +324,17 @@ def _group_fixed_to_dataframe(group) -> pandas.DataFrame:
         index = np.char.decode(group["axis1"])
     else:
         index = group["axis1"]
-    return dataset_to_dataframe(group["block0_values"], columns=columns, index=index)
+    return dataset_to_dataframe(
+        group["block0_values"], columns=columns, index=index
+    )
 
 
 def _group_table_to_dataframe(group) -> pandas.DataFrame:
     import warnings
 
     warnings.warn(
-        "You should reconsider using h5pandas to open table dataset.", UserWarning
+        "You should reconsider using h5pandas to open table dataset.",
+        UserWarning,
     )
     raise NotImplementedError(
         "You should reconsider using h5pandas to open table dataset."
@@ -352,7 +371,9 @@ class DatasetAccessor:
         """Verify the DataFrame is backed by opened h5file."""
         if isinstance(obj, pandas.DataFrame):
             values = obj[obj.columns[0]].values
-        elif isinstance(obj, pandas.Series) and not hasattr(obj.values, "_datatset"):
+        elif isinstance(obj, pandas.Series) and not hasattr(
+            obj.values, "_datatset"
+        ):
             values = obj.values
         else:
             values = obj
