@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tests of HDF5Extension Array."""
 
-
 import operator
 
 import pytest

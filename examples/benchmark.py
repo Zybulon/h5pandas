@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Feb 25 16:42:08 2024
-
-@author: Fred
-"""
+"""Benchmark h5pandas vs pandas' HDF5 and pandas' feather."""
 
 import numpy as np
 import pandas as pd
@@ -55,8 +50,12 @@ _, m2 = tracemalloc.get_traced_memory()
 tracemalloc.stop()
 
 print("\nOpening file with without compression :")
-print(f"    h5pandas.dataframe_to_hdf : time = {t1-t0:.4}s  RAM = {m1/(1024)**2:.6}MB")
-print(f"    pandas.to_hdf (PyTables) : time = {t3-t2:.4}s  RAM = {m2/(1024)**2:.6}MB")
+print(
+    f"    h5pandas.dataframe_to_hdf : time = {t1-t0:.4}s  RAM = {m1/(1024)**2:.6}MB"
+)
+print(
+    f"    pandas.to_hdf (PyTables) : time = {t3-t2:.4}s  RAM = {m2/(1024)**2:.6}MB"
+)
 
 file.close()
 gc.collect()
@@ -69,7 +68,9 @@ t0 = time.time()
 h5pd.dataframe_to_hdf(
     df,
     file1,
-    **hdf5plugin.Blosc(cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE),
+    **hdf5plugin.Blosc(
+        cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE
+    ),
 )
 t1 = time.time()
 df.to_hdf(file2, key="dataframe", complib="blosc:blosclz", complevel=5)
@@ -137,9 +138,9 @@ ram_usage = [m1 / 1024**2, m2 / 1024**2, m3 / 1024**2]
 read_time = [t1 - t0, t3 - t2, t5 - t4]
 
 print("\nOpening file with with compression :")
-print(f"    h5pandas.File : time = {t1-t0:.4}s  RAM = {ram_usage[0]:.6}MB")
-print(f"    pandas.read_hdf : time = {t3-t2:.4}s  RAM = {ram_usage[1]:.6}MB")
-print(f"    pandas.read_feather : time = {t5-t4:.4}s  RAM = {ram_usage[2]:.6}MB")
+print(f"\th5pandas.File : time = {t1-t0:.4}s  RAM = {ram_usage[0]:.6}MB")
+print(f"\tpandas.read_hdf : time = {t3-t2:.4}s  RAM = {ram_usage[1]:.6}MB")
+print(f"\tpandas.read_feather : time = {t5-t4:.4}s  RAM = {ram_usage[2]:.6}MB")
 
 file.close()
 gc.collect()
@@ -148,12 +149,15 @@ os.remove(file1)
 os.remove(file2)
 os.remove(file3)
 
+
 # Plots
-
-
 def bar(nplot: int, values, units: str, title: str):
     """Bar plot of performances."""
-    libs = ("h5pandas\n(h5py)", "pandas HDF5\n(PyTables)", "pandas Feather\n(PyArrow)")
+    libs = (
+        "h5pandas\n(h5py)",
+        "pandas HDF5\n(PyTables)",
+        "pandas Feather\n(PyArrow)",
+    )
     ax = plt.subplot(2, 2, nplot)
 
     bar = ax.bar(libs, values, width=0.4, color=["coral", "darkblue", "grey"])
@@ -169,6 +173,11 @@ fig = plt.figure(figsize=(8, 6))
 bar(1, write_time, "(s)", "Writing time with\ncompression level=5")
 bar(2, file_size, "(MB)", "File size")
 bar(3, read_time, "(s)", "Time for opening the file\nand reading 3 columns")
-bar(4, ram_usage, "(MB)", "RAM usage for opening the file\nand reading 3 columns")
+bar(
+    4,
+    ram_usage,
+    "(MB)",
+    "RAM usage for opening the file\nand reading 3 columns",
+)
 plt.tight_layout(h_pad=2)
 plt.savefig("performances.png")

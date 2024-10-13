@@ -27,26 +27,12 @@ ExtensionDtypeT = TypeVar("ExtensionDtypeT", bound="ExtensionDtype")
 
 @register_extension_dtype
 class HDF5Dtype(ExtensionDtype):
-    """Ok"""
+    """DataType associated with HDF5ExtensionArray."""
 
     _metadata: tuple[str, ...] = ()
 
     def __init__(self, *args, **kwargs):
-        """
-
-
-        Parameters
-        ----------
-        *args : TYPE
-            DESCRIPTION.
-        **kwargs : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
+        """Init HDF5Dtype."""
         dtype = np.dtype(*args, **kwargs)
         self._numpy_dtype = dtype
         self._type = dtype.type
@@ -55,6 +41,7 @@ class HDF5Dtype(ExtensionDtype):
         self._kind = dtype.kind
 
     def __str__(self) -> str:
+        """Transform self into a string."""
         return self.name
 
     def __eq__(self, other: Any) -> bool:
@@ -82,16 +69,20 @@ class HDF5Dtype(ExtensionDtype):
                 return False
         if isinstance(other, type(self)):
             return all(
-                getattr(self, attr) == getattr(other, attr) for attr in self._metadata
+                getattr(self, attr) == getattr(other, attr)
+                for attr in self._metadata
             )
         return False
 
     def __hash__(self) -> int:
         # for python>=3.10, different nan objects have different hashes
         # we need to avoid that and thus use hash function with old behavior
-        return object_hash(tuple(getattr(self, attr) for attr in self._metadata))
+        return object_hash(
+            tuple(getattr(self, attr) for attr in self._metadata)
+        )
 
     def __ne__(self, other: Any) -> bool:
+        """Inequality test."""
         return not self.__eq__(other)
 
     @property
@@ -108,7 +99,7 @@ class HDF5Dtype(ExtensionDtype):
     @property
     def type(self) -> type_t[Any]:
         """
-        The scalar type for the array, e.g. ``int``
+        The scalar type for the array, e.g. ``int``.
 
         It's expected ``ExtensionArray[item]`` returns an instance
         of ``ExtensionDtype.type`` for scalar ``item``, assuming
@@ -120,7 +111,7 @@ class HDF5Dtype(ExtensionDtype):
     @property
     def kind(self) -> str:
         """
-        A character code (one of 'biufcmMOSUV'), default 'O'
+        A character code (one of 'biufcmMOSUV'), default 'O'.
 
         This should match the NumPy dtype used when the array is
         converted to an ndarray, which is probably 'O' for object if
@@ -237,7 +228,9 @@ class HDF5Dtype(ExtensionDtype):
             print(match.groupdict())
             return cls(match[1])
         else:
-            raise TypeError(f"Cannot construct a '{cls.__name__}' from '{string}'")
+            raise TypeError(
+                f"Cannot construct a '{cls.__name__}' from '{string}'"
+            )
 
     @classmethod
     def is_dtype(cls, dtype: object) -> bool:
