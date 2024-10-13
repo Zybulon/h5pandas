@@ -69,17 +69,14 @@ class HDF5Dtype(ExtensionDtype):
                 return False
         if isinstance(other, type(self)):
             return all(
-                getattr(self, attr) == getattr(other, attr)
-                for attr in self._metadata
+                getattr(self, attr) == getattr(other, attr) for attr in self._metadata
             )
         return False
 
     def __hash__(self) -> int:
         # for python>=3.10, different nan objects have different hashes
         # we need to avoid that and thus use hash function with old behavior
-        return object_hash(
-            tuple(getattr(self, attr) for attr in self._metadata)
-        )
+        return object_hash(tuple(getattr(self, attr) for attr in self._metadata))
 
     def __ne__(self, other: Any) -> bool:
         """Inequality test."""
@@ -228,9 +225,7 @@ class HDF5Dtype(ExtensionDtype):
             print(match.groupdict())
             return cls(match[1])
         else:
-            raise TypeError(
-                f"Cannot construct a '{cls.__name__}' from '{string}'"
-            )
+            raise TypeError(f"Cannot construct a '{cls.__name__}' from '{string}'")
 
     @classmethod
     def is_dtype(cls, dtype: object) -> bool:

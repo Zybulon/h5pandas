@@ -164,9 +164,7 @@ def _data_to_hf5(
     return dataframe.h5.dataset
 
 
-def dataset_to_dataframe(
-    dataset: h5py.Dataset, columns=None, index=None, copy=False
-):
+def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=False):
     """
     Transform a dataset into a DataFrame.
 
@@ -225,9 +223,7 @@ def dataset_to_dataframe(
                 index = dataset.attrs["index"]
 
     # We use a manager to speed up the dataFrame creation 0.8s -> 0.2s
-    arrays = [
-        HDF5ExtensionArray(dataset, i) for i, col in enumerate(columns_decoded)
-    ]
+    arrays = [HDF5ExtensionArray(dataset, i) for i, col in enumerate(columns_decoded)]
     from pandas.core.internals.construction import arrays_to_mgr
 
     mgr = arrays_to_mgr(
@@ -306,9 +302,7 @@ def _group_with_column_to_dataframe(group) -> pandas.DataFrame:
         if "columns" in dataset.attrs:
             raise ValueError("This dataset contains several columns")
         series.append(
-            pandas.Series(
-                HDF5ExtensionArray(dataset), name=dataset_name, copy=False
-            )
+            pandas.Series(HDF5ExtensionArray(dataset), name=dataset_name, copy=False)
         )
 
     # concatenate the series into a DataFrame
@@ -324,9 +318,7 @@ def _group_fixed_to_dataframe(group) -> pandas.DataFrame:
         index = np.char.decode(group["axis1"])
     else:
         index = group["axis1"]
-    return dataset_to_dataframe(
-        group["block0_values"], columns=columns, index=index
-    )
+    return dataset_to_dataframe(group["block0_values"], columns=columns, index=index)
 
 
 def _group_table_to_dataframe(group) -> pandas.DataFrame:
@@ -371,9 +363,7 @@ class DatasetAccessor:
         """Verify the DataFrame is backed by opened h5file."""
         if isinstance(obj, pandas.DataFrame):
             values = obj[obj.columns[0]].values
-        elif isinstance(obj, pandas.Series) and not hasattr(
-            obj.values, "_datatset"
-        ):
+        elif isinstance(obj, pandas.Series) and not hasattr(obj.values, "_datatset"):
             values = obj.values
         else:
             values = obj

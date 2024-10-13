@@ -209,9 +209,7 @@ def test_retrieve_dataframe():
 def test_retrieve_index_and_columns_string():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(
-        arr, columns=["é", "b", "c", "d", "e"], index=index
-    )
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
     try:
         df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
     except ImportError:
@@ -255,9 +253,7 @@ def test_retrieve_index_and_columns_int():
 def test_retrieve_DataFrame_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(
-        arr, columns=["é", "b", "c", "d", "e"], index=index
-    )
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
     df_named.attrs = {
         "A": "B",
         "C": [1, 2, 3],
@@ -268,9 +264,7 @@ def test_retrieve_DataFrame_attributes():
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_retrieved = f["dataframe"]
         for key in df_named.attrs.keys():
-            if len(df_named.attrs[key]) and not isinstance(
-                df_named.attrs[key], str
-            ):
+            if len(df_named.attrs[key]) and not isinstance(df_named.attrs[key], str):
                 assert all(df_named.attrs[key] == df_retrieved.attrs[key])
             else:
                 assert df_named.attrs[key] == df_retrieved.attrs[key]
@@ -281,9 +275,7 @@ def test_retrieve_DataFrame_attributes():
 def test_retrieve_Series_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(
-        arr, columns=["é", "b", "c", "d", "e"], index=index
-    )
+    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
     df_named["é"].attrs["foo"] = "bar"
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
