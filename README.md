@@ -11,7 +11,10 @@ It also has convenient methods to write DataFrames directly into an HDF5 file.
 - [Installation](#installation)
 - [Getting started](#getting-started)
     - [Pandas compatibilty](#pandas-compatibilty)
-    - [h5py API](#h5py-api)
+        - [Saving a dataFrame into a file](#saving-a-dataframe-into-a-file)
+        - [Saving an array into a file](#saving-an-array-into-a-file)
+        - [Reading a file](#reading-a-file)
+- [h5py API](#h5py-api)
 
 ## FAQ
 
@@ -100,6 +103,17 @@ df0 = pd.DataFrame(
 # The function dataframe_to_hdf is the easiest way to write a DataFrame into a HDF5
 h5pd.dataframe_to_hdf(df0, "foo.h5", "foo")
 ```
+
+#### Saving an array into a file
+The function `ndarray_to_hdf` is the easiest way to write an array into a HDF5.
+```Python
+columns=["f", "o", "o", "ß", "a", "r"]
+index=["a", "b", "c", "d", "e", "f", "g", "h"]
+h5pd.ndarray_to_hdf(array, "foo.h5", "foo")
+h5pd.ndarray_to_hdf(array, "foo.h5", "foo", columns=columns)
+h5pd.ndarray_to_hdf(array, "foo.h5", "foo", columns=columns, index=index)
+```
+
 #### Reading a file
 Later you can retrieve your DataFrame with exactly the same columns names, index and attributes.
 You can use the DataFrame as any other other DataFrame.
@@ -114,14 +128,15 @@ These DataFrames can operate with "classic" DataFrames
     delta = df - df0
 ```
 
-### h5py API
+
+## h5py API
 Since h5pd is based on h5py, it has the same API.
 Therefore you can use h5pandas the same way you use h5py except that it provides `pandas.DataFrame` instead of `h5py.dataset` objects, even if the file has not been written with h5pandas.
 
 h5pandas is fully compatible with h5py: you can write a dataset with one library and read with the other indifferently.
 However, h5py does not deal with indexes and attributes while h5pandas does.
 
-#### Saving a file with h5py syntax
+### Saving a file with h5py syntax
 If you are more familiar with h5py syntax, you can write a DataFrame into a HDF5 file with `create_dataset`.
 
 Inside the file, the columns names are saved as attribute of the dataset.
