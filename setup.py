@@ -4,6 +4,7 @@ from setuptools import setup
 # To use a consistent encoding
 from codecs import open
 from os import path
+from h5pandas import __version__
 
 # The directory containing this file
 HERE = path.abspath(path.dirname(__file__))
@@ -15,7 +16,7 @@ with open(path.join(HERE, "README.md"), encoding="utf-8") as f:
 # This call to setup() does all the work
 setup(
     name="h5pandas",
-    version="0.11",
+    version=__version__,
     description="Load hdf5 into Pandas DataFrame instantaneously",
     long_description=long_description,
     long_description_content_type="text/markdown",
