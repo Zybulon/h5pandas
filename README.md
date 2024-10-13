@@ -77,7 +77,7 @@ pip install h5pandas
 ### Pandas compatibilty
 For those familiar with pandas, the function `dataframe_to_hdf` is the easiest way to write a DataFrame into a HDF5.
 
-#### Saving a file
+#### Saving a dataFrame into a file
 ```Python
 import h5pandas as h5pd
 import pandas as pd
@@ -100,7 +100,6 @@ df0 = pd.DataFrame(
 # The function dataframe_to_hdf is the easiest way to write a DataFrame into a HDF5
 h5pd.dataframe_to_hdf(df0, "foo.h5", "foo")
 ```
-
 #### Reading a file
 Later you can retrieve your DataFrame with exactly the same columns names, index and attributes.
 You can use the DataFrame as any other other DataFrame.
