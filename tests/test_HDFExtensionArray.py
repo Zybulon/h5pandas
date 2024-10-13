@@ -16,14 +16,14 @@ class TestConstructors(base.BaseConstructorsTests):
 #     pass
 
 
-# class TestDtype(base.BaseDtypeTests):
-#     # 22 passed
-#     def test_construct_from_string_wrong_type_raises(self, dtype):
-#         with pytest.raises(
-#             TypeError,
-#             match="expected string or bytes-like object, got 'int'",
-#         ):
-#             type(dtype).construct_from_string(0)
+class TestDtype(base.BaseDtypeTests):
+    # 22 passed
+    def test_construct_from_string_wrong_type_raises(self, dtype):
+        with pytest.raises(
+            TypeError,
+            match="expected string or bytes-like object, got 'int'",
+        ):
+            type(dtype).construct_from_string(0)
 
 
 # class TestGetitem(base.BaseGetitemTests):
@@ -50,7 +50,7 @@ class TestConstructors(base.BaseConstructorsTests):
 #                 f"index {ub+1} is out of bounds for axis 0 with size {ub}",
 #                 f"index -{ub+1} is out of bounds for axis 0 with size {ub}",
 #                 f"Index \({ub+1}\) out of range for \(0-{ub-1}\)",
-#                 f"Index \(-1\) out of range for \(0-{ub-1}\)"
+#                 f"Index \(-1\) out of range for \(0-{ub-1}\)",
 #             ]
 #         )
 #         with pytest.raises(IndexError, match=msg):
@@ -60,13 +60,13 @@ class TestConstructors(base.BaseConstructorsTests):
 
 
 # class TestGroupby(base.BaseGroupbyTests):
-#     # 12 passed
+#     # 1 failed, 11 passed
 #     pass
 
 
-# class TestInterface(base.BaseInterfaceTests):
-#     #  14 passed
-#     pass
+class TestInterface(base.BaseInterfaceTests):
+    #  14 passed
+    pass
 
 
 # class TestParsing(base.BaseParsingTests):
@@ -75,13 +75,13 @@ class TestConstructors(base.BaseConstructorsTests):
 
 
 # class TestMethods(base.BaseMethodsTests):
-#     # 39 failed, 73 passed, 4 errors
+#     # 38 failed, 73 passed, 4 errors
 #     pass
 
 
-# class TestMissing(base.BaseMissingTests):
-#     # 1 failed, 23 passed
-#     pass
+class TestMissing(base.BaseMissingTests):
+    # 24 passed
+    pass
 
 
 # class TestArithmeticOps(base.BaseArithmeticOpsTests):
@@ -94,42 +94,38 @@ class TestConstructors(base.BaseConstructorsTests):
 #     pass
 
 
-# class TestComparisonOps(base.BaseComparisonOpsTests):
-#     # 12 passed
-#     pass
+class TestComparisonOps(base.BaseComparisonOpsTests):
+    # 12 passed
+    pass
 
 
-# class TestOpsUtil(base.BaseOpsUtil):
-#     # Nothing
-#     pass
+class TestOpsUtil(base.BaseOpsUtil):
+    # Nothing
+    pass
 
 
-# class TestUnaryOps(base.BaseUnaryOpsTests):
-#     # 4 passed
-#     pass
+class TestUnaryOps(base.BaseUnaryOpsTests):
+    # 4 passed
+    pass
 
 
-# class TestPrinting(base.BasePrintingTests):
-#     # 6 passed
-#     pass
+class TestPrinting(base.BasePrintingTests):
+    # 6 passed
+    pass
 
 
-# class TestBooleanReduce(base.BaseBooleanReduceTests):
-#     # 4 passed, 48 skipped
-#     pass
+class TestBooleanReduce(base.BaseReduceTests):
+    # 46 passed, 6 skipped
+    def _supports_reduction(self, obj, op_name: str) -> bool:
+        # Specify if we expect this reduction to succeed.
+        return True
 
 
-# class TestNoReduce(base.BaseNoReduceTests):
-#     # 26 failed, 20 passed, 6 skipped, 16 warnings
-#     def _supports_reduction(self, obj, op_name: str) -> bool:
-#         # Specify if we expect this reduction to succeed.
-#         return True
-#     pass
-
-
-# class TestNumericReduce(base.BaseNumericReduceTests):
-#     # 26 failed, 16 passed, 10 skipped, 16 warnings
-#     pass
+class TestReduce(base.BaseReduceTests):
+    #  46 passed, 6 skipped
+    def _supports_reduction(self, obj, op_name: str) -> bool:
+        # Specify if we expect this reduction to succeed.
+        return True
 
 
 # class TestReshaping(base.BaseReshapingTests):

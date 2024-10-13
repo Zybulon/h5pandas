@@ -58,6 +58,8 @@ from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 class HDF5ExtensionArray(
     np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray
 ):
+    """HDF5ExtensionArray."""
+
     _HANDLED_TYPES = (np.ndarray, numbers.Number)
     # __pandas_priority__ = 5000
     # __array_priority__ = 1000
@@ -72,14 +74,10 @@ class HDF5ExtensionArray(
         ----------
         dataset : h5py.Dataset
         column_index : int, optional
-            index of the column inside the dataset that will become an HDF5ExtensionArray. The default is 0.
-        dtype : TYPE, optional
-            DESCRIPTION. The default is None.
-
-        Returns
-        -------
-        None
-            DESCRIPTION.
+            index of the column inside the dataset that will become an
+            HDF5ExtensionArray. The default is 0.
+        dtype : dtype or None, optional
+            The dtype of the array. The default is None.
 
         """
         if isinstance(dataset, HDF5ExtensionArray):
@@ -92,26 +90,7 @@ class HDF5ExtensionArray(
             if not isinstance(dataset, np.ndarray):
                 dataset = np.array(dataset, dtype=dtype)
 
-            if len(dataset):
-                # dataset = np.array(dataset, dtype=dtype)
-                # dataset = dataset.T
-                column_index = 0
-
-                # f = h5py.File("h5pyArray_{}".format(uuid.uuid4()), 'w', libver='latest', driver="core", backing_store=False)
-                # try:
-                #     dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=dtype)
-                # except OSError:
-                #     try:
-                #         dataset = f.create_dataset("column", data=dataset, shape=(len(dataset), 1), maxshape=(None, None), chunks=(len(dataset), 1), dtype=h5py.opaque_dtype(dtype))
-                #     except TypeError:
-                #         dataset = np.array(dataset, dtype=dtype)
-                # except TypeError:
-                #     dataset = np.array([dataset], dtype=dtype)
-                #     dataset = dataset.T
-
-            else:
-                dataset = np.empty((0,))
-                column_index = 0
+            column_index = 0
         self._dataset = dataset
         self._column_index = column_index
         self._dtype = HDF5Dtype(self._dataset.dtype)
@@ -235,7 +214,9 @@ class HDF5ExtensionArray(
 
         elif isinstance(item, slice) and item == slice(None):
             return HDF5ExtensionArray(self._dataset, self._column_index)
-        elif isinstance(item, tuple) and (slice(None) in item or Ellipsis in item):
+        elif isinstance(item, tuple) and (
+            slice(None) in item or Ellipsis in item
+        ):
             if self._dataset.ndim > 1:
                 dataset = self._dataset[*item, self._column_index, ...]
             else:
@@ -295,7 +276,9 @@ class HDF5ExtensionArray(
         # FIXME
 
         if self._dataset.ndim > 1:
-            return self._dataset.__setitem__((key, self._column_index, Ellipsis), value)
+            return self._dataset.__setitem__(
+                (key, self._column_index, Ellipsis), value
+            )
         else:
             return self._dataset.__setitem__(key, value)
 
@@ -350,7 +333,9 @@ class HDF5ExtensionArray(
         if is_scalar(item) and isna(item):
             if not self._can_hold_na:
                 return False
-            elif item is self.dtype.na_value or isinstance(item, self.dtype.type):
+            elif item is self.dtype.na_value or isinstance(
+                item, self.dtype.type
+            ):
                 return self._hasna
             else:
                 return False
@@ -380,9 +365,7 @@ class HDF5ExtensionArray(
         )
         # TODO : utiliser l'argument out ?
 
-        array = np.concatenate(
-            [subdataset._dataset[()] for subdataset in to_concat], axis=0
-        )
+        array = np.concatenate(to_concat, axis=0)
         dataset = f.create_dataset(
             "extension",
             data=array,
@@ -555,7 +538,9 @@ class HDF5ExtensionArray(
         # type for the array, to the physical storage type for
         # the data, before passing to take.
 
-        result = take(data, indices, fill_value=fill_value, allow_fill=allow_fill)
+        result = take(
+            data, indices, fill_value=fill_value, allow_fill=allow_fill
+        )
         return self._from_sequence(result, dtype=self.dtype)
 
     def copy(self):
@@ -609,7 +594,13 @@ class HDF5ExtensionArray(
         return meth(**kwargs)
 
     def _reduce(
-        self, name: str, *, skipna: bool = True, keepdims: bool = False, **kwargs
+        self,
+        name: str,
+        *,
+        skipna: bool = True,
+        keepdims: bool = False,
+        min_count: int = 0,
+        **kwargs,
     ):
         """
         Return a scalar result of performing the reduction operation.
@@ -625,12 +616,10 @@ class HDF5ExtensionArray(
         keepdims : bool, default False
             If False, a scalar is returned.
             If True, the result has dimension with size one along the reduced axis.
+        min_count : int,
+            The required number of valid values to perform the operation. If fewer
+            than ``min_count`` non-NA values are present the result will be NA.
 
-            .. versionadded:: 2.1
-
-               This parameter is not required in the _reduce signature to keep backward
-               compatibility, but will become required in the future. If the parameter
-               is not found in the method signature, a FutureWarning will be emitted.
         **kwargs
             Additional keyword arguments passed to the reduction function.
             Currently, `ddof` is the only supported kwarg.
@@ -649,10 +638,21 @@ class HDF5ExtensionArray(
         1
         """
         if skipna:
-            meth = getattr(self._ndarray, name, None)
-        else:
             array = self._ndarray
-            meth = getattr(array[~np.isnan(array)], name, None)
+        else:
+            array = self._ndarray[~np.isnan(self._ndarray)]
+
+        if len(array) < min_count:
+            return self.dtype.na_value
+
+        meth = getattr(array, name, None)
+        if meth is None:
+            # kurt, skew etc...
+            meth = getattr(self, name, None)
+        if meth is None:
+            # median is not attribute of
+            meth = lambda x=None: getattr(np, name, None)(self, x)
+
         if meth is None:
             raise TypeError(
                 f"'{type(self).__name__}' with dtype {self.dtype} "
@@ -660,7 +660,7 @@ class HDF5ExtensionArray(
             )
         result = meth(**kwargs)
         if keepdims:
-            result = np.array([result])
+            result = type(self)([result])
         return result
 
     def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs, **kwargs):
@@ -669,7 +669,8 @@ class HDF5ExtensionArray(
         # The primary modification is not boxing scalar return values
         # in NumpyExtensionArray, since pandas' ExtensionArrays are 1-d.
         if any(
-            isinstance(other, (ABCSeries, ABCIndex, ABCDataFrame)) for other in inputs
+            isinstance(other, (ABCSeries, ABCIndex, ABCDataFrame))
+            for other in inputs
         ):
             return NotImplemented
 
@@ -770,7 +771,7 @@ class HDF5ExtensionArray(
 
     def dropna(self):
         """Remove missing values."""
-        return type(self)(self._ndarray[~np.isna(self._ndarray)])
+        return type(self)(self._ndarray[~np.isnan(self._ndarray)])
 
     def interpolate(
         self,
@@ -1015,8 +1016,10 @@ class HDF5ExtensionArray(
         nv.validate_stat_ddof_func(
             (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="sem"
         )
-        result = nanops.nansem(self._ndarray, axis=axis, skipna=skipna, ddof=ddof)
-        return self._wrap_reduction_result(axis, result)
+        result = nanops.nansem(
+            self._ndarray, axis=axis, skipna=skipna, ddof=ddof
+        )
+        return result
 
     def kurt(
         self,
@@ -1028,10 +1031,12 @@ class HDF5ExtensionArray(
         skipna: bool = True,
     ):
         nv.validate_stat_ddof_func(
-            (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="kurt"
+            (),
+            {"dtype": dtype, "out": out, "keepdims": keepdims},
+            fname="kurt",
         )
         result = nanops.nankurt(self._ndarray, axis=axis, skipna=skipna)
-        return self._wrap_reduction_result(axis, result)
+        return result
 
     def skew(
         self,
@@ -1043,7 +1048,9 @@ class HDF5ExtensionArray(
         skipna: bool = True,
     ):
         nv.validate_stat_ddof_func(
-            (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="skew"
+            (),
+            {"dtype": dtype, "out": out, "keepdims": keepdims},
+            fname="skew",
         )
         result = nanops.nanskew(self._ndarray, axis=axis, skipna=skipna)
-        return self._wrap_reduction_result(axis, result)
+        return result

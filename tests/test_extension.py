@@ -1,6 +1,7 @@
 """
 Sandbox Tests.
 """
+
 import os
 import numpy as np
 import h5pandas
@@ -165,7 +166,7 @@ def test_attributes():
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
         df._values
-        d2 = h5pandas.dataframe_to_hdf5(df, "foobar3.h5")
+        d2 = h5pandas.dataframe_to_hdf(df, "foobar3.h5")
         df2 = dataset_to_dataframe(d2)
         assert (df2._values == df0._values).all()
 
@@ -177,7 +178,10 @@ def test_retrieve_dataframe():
         arr, columns=["é", "b", "c", "d", "e"], index=range(1000, 4000)
     )
 
-    df.to_hdf("foobar.h5", key="random_fixed", format="fixed", mode="w")
+    try:
+        df.to_hdf("foobar.h5", key="random_fixed", format="fixed", mode="w")
+    except ImportError:
+        return
     df.to_hdf("foobar.h5", key="random_table", format="table")
     df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
     df_named.to_hdf("foobar.h5", key="named_random_table", format="table")
@@ -205,9 +209,13 @@ def test_retrieve_dataframe():
 def test_retrieve_index_and_columns_string():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
-
-    df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
+    try:
+        df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
+    except ImportError:
+        return
     h5pandas.dataframe_to_hdf(
         df_named, "foobar.h5", dataset_name="named_random_h5pandas"
     )
@@ -227,7 +235,10 @@ def test_retrieve_index_and_columns_int():
     arr = np.random.rand(3000, 5)
     df = pd.DataFrame(arr, columns=None, index=range(1000, 4000))
 
-    df.to_hdf("foobar.h5", key="random_fixed", format="fixed")
+    try:
+        df.to_hdf("foobar.h5", key="random_fixed", format="fixed")
+    except ImportError:
+        return
     h5pandas.dataframe_to_hdf(df, "foobar.h5", dataset_name="random_h5pandas")
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
@@ -244,7 +255,9 @@ def test_retrieve_index_and_columns_int():
 def test_retrieve_DataFrame_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named.attrs = {
         "A": "B",
         "C": [1, 2, 3],
@@ -255,7 +268,9 @@ def test_retrieve_DataFrame_attributes():
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_retrieved = f["dataframe"]
         for key in df_named.attrs.keys():
-            if len(df_named.attrs[key]) and not isinstance(df_named.attrs[key], str):
+            if len(df_named.attrs[key]) and not isinstance(
+                df_named.attrs[key], str
+            ):
                 assert all(df_named.attrs[key] == df_retrieved.attrs[key])
             else:
                 assert df_named.attrs[key] == df_retrieved.attrs[key]
@@ -263,11 +278,12 @@ def test_retrieve_DataFrame_attributes():
     os.remove("foobar.h5")
 
 
-
 def test_retrieve_Series_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named["é"].attrs["foo"] = "bar"
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
@@ -277,14 +293,16 @@ def test_retrieve_Series_attributes():
     gc.collect()
     os.remove("foobar.h5")
 
+
 if __name__ == "__main__":
     test_general_behavior()
+    test_rmul()
+    test_op_2EA()
+    test_add()
+    test_write_hdf5()
+    test_attributes()
     test_retrieve_dataframe()
     test_retrieve_DataFrame_attributes()
     test_retrieve_Series_attributes()
     test_retrieve_index_and_columns_string()
     test_retrieve_index_and_columns_int()
-    test_rmul()
-    test_op_2EA()
-    test_add()
-    test_write_hdf5()
