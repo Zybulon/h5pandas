@@ -10,10 +10,9 @@ It also has convenient methods to write DataFrames directly into an HDF5 file.
 - [Readthedoc](#readthedoc)
 - [Installation](#installation)
 - [Getting started](#getting-started)
-    - [Pandas compatibilty](#pandas-compatibilty)
-        - [Saving a dataFrame into a file](#saving-a-dataframe-into-a-file)
-        - [Saving an array into a file](#saving-an-array-into-a-file)
-        - [Reading a file](#reading-a-file)
+    - [Saving a dataFrame into a file](#saving-a-pandas-dataframe-into-a-file)
+    - [Saving an array into a file](#saving-an-array-into-a-file)
+    - [Reading a file](#reading-a-file)
 - [h5py API](#h5py-api)
 
 ## FAQ
@@ -56,6 +55,15 @@ That means you need to make sure the underlying file is never closed.
 - If your data is scattered over thousands of small hdf5 files and you want to open them all.
 - When your data are not columns and therefore they cannot be represented by series.
 
+### How can it be faster than PyTables ?
+Pandas uses PyTables to read and write to/from HDF5 files.
+PyTables is an excellent package that allows extremely fast writing and reading. 
+However PyTables is well suited for row-sorted data, it stores all data as consecutive rows while
+pandas need data separated as columns (one for each Serie).
+This means PyTables has to load all the data into memory and then pandas as to rearrange it to fit its columns paradigm.
+On the opposite, h5pandas stores arrays and dataframes into HDF5 files by separating each columns from each others.
+That means it can retrieves them independently and only when needed. This is what makes h5pandas well-suited from pandas.
+
 ## Files compatibilty
 h5pandas is fully compatible with h5py: you can write a dataset with one library and read with the other.
 
@@ -77,10 +85,9 @@ pip install h5pandas
 
 ## Getting started
 
-### Pandas compatibilty
 For those familiar with pandas, the function `dataframe_to_hdf` is the easiest way to write a DataFrame into a HDF5.
 
-#### Saving a dataFrame into a file
+### Saving a Pandas' dataFrame into a file
 ```Python
 import h5pandas as h5pd
 import pandas as pd
@@ -104,7 +111,7 @@ df0 = pd.DataFrame(
 h5pd.dataframe_to_hdf(df0, "foo.h5", "foo")
 ```
 
-#### Saving an array into a file
+### Saving an array into a file
 The function `ndarray_to_hdf` is the easiest way to write an array into a HDF5.
 ```Python
 columns=["f", "o", "o", "ß", "a", "r"]
@@ -114,7 +121,7 @@ h5pd.ndarray_to_hdf(array, "foo.h5", "foo", columns=columns)
 h5pd.ndarray_to_hdf(array, "foo.h5", "foo", columns=columns, index=index)
 ```
 
-#### Reading a file
+### Reading a file
 Later you can retrieve your DataFrame with exactly the same columns names, index and attributes.
 You can use the DataFrame as any other other DataFrame.
 However, since the data are not loaded into memory, you must make sure the file is always opened when you acess it.
