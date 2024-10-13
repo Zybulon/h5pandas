@@ -9,3 +9,5 @@ examples/feather.feather
 examples/debug_benchmark.py
 tests/debug.py
 examples/debug_benchmark_pandas.py
+/h5pandas.egg-info
+/build
