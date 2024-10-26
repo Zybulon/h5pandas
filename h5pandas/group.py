@@ -51,12 +51,12 @@ class Group(h5py.Group):
         if isinstance(item, h5py.Group):
             try:
                 return group_to_dataframe(item)
-            except Exception:
+            except ValueError:
                 return Group(item)
         elif isinstance(item, h5py.Dataset):
             try:
                 return dataset_to_dataframe(item)
-            except Exception:
+            except ValueError:
                 return item
         print("Item type not managed")
         return item
