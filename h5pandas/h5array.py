@@ -214,11 +214,13 @@ class HDF5ExtensionArray(
 
         elif isinstance(item, slice) and item == slice(None):
             return HDF5ExtensionArray(self._dataset, self._column_index)
-        elif isinstance(item, tuple) and (slice(None) in item or Ellipsis in item):
+        elif isinstance(item, tuple) and (
+            slice(None) in item or Ellipsis in item
+        ):
             if self._dataset.ndim > 1:
-                dataset = self._dataset[*item, self._column_index, ...]
+                dataset = self._dataset[(*item, self._column_index, ...)]
             else:
-                dataset = self._dataset[*item]
+                dataset = self._dataset[item]
             return HDF5ExtensionArray(dataset)
         else:
             # FIXME : AVOID COPY HERE
@@ -274,7 +276,9 @@ class HDF5ExtensionArray(
         # FIXME
 
         if self._dataset.ndim > 1:
-            return self._dataset.__setitem__((key, self._column_index, Ellipsis), value)
+            return self._dataset.__setitem__(
+                (key, self._column_index, Ellipsis), value
+            )
         else:
             return self._dataset.__setitem__(key, value)
 
@@ -329,7 +333,9 @@ class HDF5ExtensionArray(
         if is_scalar(item) and isna(item):
             if not self._can_hold_na:
                 return False
-            elif item is self.dtype.na_value or isinstance(item, self.dtype.type):
+            elif item is self.dtype.na_value or isinstance(
+                item, self.dtype.type
+            ):
                 return self._hasna
             else:
                 return False
@@ -532,7 +538,9 @@ class HDF5ExtensionArray(
         # type for the array, to the physical storage type for
         # the data, before passing to take.
 
-        result = take(data, indices, fill_value=fill_value, allow_fill=allow_fill)
+        result = take(
+            data, indices, fill_value=fill_value, allow_fill=allow_fill
+        )
         return self._from_sequence(result, dtype=self.dtype)
 
     def copy(self):
@@ -661,7 +669,8 @@ class HDF5ExtensionArray(
         # The primary modification is not boxing scalar return values
         # in NumpyExtensionArray, since pandas' ExtensionArrays are 1-d.
         if any(
-            isinstance(other, (ABCSeries, ABCIndex, ABCDataFrame)) for other in inputs
+            isinstance(other, (ABCSeries, ABCIndex, ABCDataFrame))
+            for other in inputs
         ):
             return NotImplemented
 
@@ -1007,7 +1016,9 @@ class HDF5ExtensionArray(
         nv.validate_stat_ddof_func(
             (), {"dtype": dtype, "out": out, "keepdims": keepdims}, fname="sem"
         )
-        result = nanops.nansem(self._ndarray, axis=axis, skipna=skipna, ddof=ddof)
+        result = nanops.nansem(
+            self._ndarray, axis=axis, skipna=skipna, ddof=ddof
+        )
         return result
 
     def kurt(
