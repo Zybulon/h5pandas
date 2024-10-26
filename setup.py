@@ -13,8 +13,12 @@ with open(path.join(HERE, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
     
 # Get the requirements from requirement.txt
-with open(path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
-    requirements = f.readlines()
+try:
+    with open(path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
+        requirements = f.readlines()
+except FileNotFoundError:
+    with open(path.join(HERE, "h5pandas.egg-info", "requires.txt"), encoding="utf-8") as f:
+        requirements = f.readlines()
 
 # This call to setup() does all the work
 setup(
