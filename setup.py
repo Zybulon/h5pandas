@@ -11,13 +11,15 @@ HERE = path.abspath(path.dirname(__file__))
 # Get the long description from the README file
 with open(path.join(HERE, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
-    
+
 # Get the requirements from requirement.txt
 try:
     with open(path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
         requirements = f.readlines()
 except FileNotFoundError:
-    with open(path.join(HERE, "h5pandas.egg-info", "requires.txt"), encoding="utf-8") as f:
+    with open(
+        path.join(HERE, "h5pandas.egg-info", "requires.txt"), encoding="utf-8"
+    ) as f:
         requirements = f.readlines()
 
 # This call to setup() does all the work
@@ -43,5 +45,5 @@ setup(
     packages=["h5pandas"],
     include_package_data=True,
     install_requires=requirements,
-    python_requires=">=3.10"
+    python_requires=">=3.10",
 )
