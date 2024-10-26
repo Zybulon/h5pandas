@@ -21,11 +21,16 @@ except FileNotFoundError:
         path.join(HERE, "h5pandas.egg-info", "requires.txt"), encoding="utf-8"
     ) as f:
         requirements = f.readlines()
+        
+# Get the version number
+with open(path.join(HERE, "h5pandas", "__init__.py"), encoding="utf-8") as f:
+    lines = f.readlines()
+version = lines[0][15:-2]
 
 # This call to setup() does all the work
 setup(
     name="h5pandas",
-    version="0.12",
+    version=version,
     description="Load hdf5 into Pandas DataFrame instantaneously",
     long_description=long_description,
     long_description_content_type="text/markdown",
