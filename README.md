@@ -4,6 +4,8 @@ h5pandas is a thin overlay on top of h5py that provides pandas DataFrames instea
 The purpose of this library is to combine the power of Pandas' data manipulation with the efficiency of h5py and the HDF5 format.
 It also has convenient methods to write DataFrames directly into an HDF5 file.
 
+Note : h5pandas is still experimental and may contain some bugs. Please tell us if you notice one.
+
 ## Table of Contents
 
 - [FAQ](#faq)
@@ -64,7 +66,7 @@ This means PyTables has to load all the data into memory and then pandas as to r
 On the opposite, h5pandas stores arrays and dataframes into HDF5 files by separating each columns from each others.
 That means it can retrieves them independently and only when needed. This is what makes h5pandas well-suited from pandas.
 
-## Files compatibilty
+## Files compatibility
 h5pandas is fully compatible with h5py: you can write a dataset with one library and read with the other.
 
 h5pandas is able to open HDF5 file written with :
