@@ -21,7 +21,7 @@ except FileNotFoundError:
         path.join(HERE, "h5pandas.egg-info", "requires.txt"), encoding="utf-8"
     ) as f:
         requirements = f.readlines()
-        
+
 # Get the version number
 with open(path.join(HERE, "h5pandas", "__init__.py"), encoding="utf-8") as f:
     lines = f.readlines()
