@@ -11,6 +11,10 @@ HERE = path.abspath(path.dirname(__file__))
 # Get the long description from the README file
 with open(path.join(HERE, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
+    
+# Get the requirements from requirement.txt
+with open(path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
+    requirements = f.readlines()
 
 # This call to setup() does all the work
 setup(
@@ -34,5 +38,6 @@ setup(
     ],
     packages=["h5pandas"],
     include_package_data=True,
-    install_requires=["h5py", "pandas>=2.1.0"],
+    install_requires=requirements,
+    python_requires=">=3.10"
 )
