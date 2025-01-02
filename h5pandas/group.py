@@ -4,6 +4,7 @@ import numpy as np
 from h5pandas.dataframe import dataset_to_dataframe, group_to_dataframe
 from h5pandas import HDF5Dtype
 import h5py
+import warnings
 
 try:
     from pandas import DataFrame, Index
@@ -129,7 +130,14 @@ class Group(h5py.Group):
         """
 
         def add_attribute(dataset, attr_name, values):
-            values = np.array(values)
+            if isinstance(values, dict):
+                warnings.warn(
+                    "When saving dataframe into HDF5 file : attribute of type dict is not supported yet",
+                    Warning,
+                )
+                return
+
+            values = np.atleast_1d(values)
             if values.dtype == object:
                 values = values.astype(type(values[0]))
             try:
