@@ -310,17 +310,36 @@ def test_retrieve_Series_attributes_dict():
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
 
+def test_endianness():
+    arr = np.ones((3000, 5), dtype=">f8")
+    with h5py.File("foobar.h5", "w", libver="latest") as f:
+        d = f.create_dataset("toto", data=arr)
+        df = dataset_to_dataframe(d)
+        print(df)
+        print(df[0])
+
+    arr = np.ones((3000, 5), dtype="<f8")
+    with h5py.File("foobar.h5", "w", libver="latest") as f:
+        d = f.create_dataset("toto", data=arr)
+        df = dataset_to_dataframe(d)
+        print(df)
+        print(df[0])
+
+    os.remove("foobar.h5")
+
+
 if __name__ == "__main__":
-    test_general_behavior()
-    test_rmul()
-    test_op_2EA()
-    test_add()
-    test_write_hdf5()
-    test_attributes()
-    test_retrieve_dataframe()
-    test_retrieve_index_and_columns_string()
-    test_retrieve_index_and_columns_int()
-    test_retrieve_DataFrame_attributes()
-    test_retrieve_Series_attributes()
-    test_retrieve_Series_attributes_array()
-    test_retrieve_Series_attributes_dict()
+    # test_general_behavior()
+    # test_rmul()
+    # test_op_2EA()
+    # test_add()
+    # test_write_hdf5()
+    # test_attributes()
+    # test_retrieve_dataframe()
+    # test_retrieve_index_and_columns_string()
+    # test_retrieve_index_and_columns_int()
+    # test_retrieve_DataFrame_attributes()
+    # test_retrieve_Series_attributes()
+    # test_retrieve_Series_attributes_array()
+    # test_retrieve_Series_attributes_dict()
+    test_endianness()

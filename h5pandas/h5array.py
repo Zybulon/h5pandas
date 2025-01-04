@@ -531,8 +531,21 @@ class HDF5ExtensionArray(
         # fill value should always be translated from the scalar
         # type for the array, to the physical storage type for
         # the data, before passing to take.
+        try:
+            result = take(data, indices, fill_value=fill_value, allow_fill=allow_fill)
+        except ValueError:
+            import warnings
 
-        result = take(data, indices, fill_value=fill_value, allow_fill=allow_fill)
+            # Pandas 2.2.3 does not support big endian arrays on little endian
+            # systems. Maybe this Issue will resolve it :
+            # https://github.com/pandas-dev/pandas/issues/53234
+            warnings.warn(
+                "h5pandas : allow_fill is not applied by h5pandas\
+because Big-endian buffer not supported on little-endian compiler by pandas.",
+                DeprecationWarning,
+            )
+            result = data.take(indices)
+
         return self._from_sequence(result, dtype=self.dtype)
 
     def copy(self):
