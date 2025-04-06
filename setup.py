@@ -36,7 +36,6 @@ setup(
     long_description_content_type="text/markdown",
     url="",
     author="Frédéric MASSON",
-    author_email="masson-frederic@hotmail.fr",
     license="MIT",
     classifiers=[
         "Intended Audience :: Developers",
