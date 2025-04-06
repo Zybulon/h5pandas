@@ -53,7 +53,7 @@ def dataframe_to_hdf(
 
     Returns
     -------
-    dataset : h5py.dataset
+    dataset : h5py.Dataset
         The dataset created inside h5file.
     """
     return _data_to_hf5(
@@ -108,7 +108,7 @@ def ndarray_to_hdf(
 
     Returns
     -------
-    dataset : h5py.dataset
+    dataset : h5py.Dataset
         The dataset created inside h5file.
     """
     return _data_to_hf5(
@@ -297,7 +297,7 @@ def _group_with_column_to_dataframe(group) -> pandas.DataFrame:
     series = []
     for dataset_name in group:
         dataset = group[dataset_name]
-        if not isinstance(dataset, h5py.dataset):
+        if not isinstance(dataset, h5py.Dataset):
             raise ValueError("All child of the group must be datasets")
         if "columns" in dataset.attrs:
             raise ValueError("This dataset contains several columns")
