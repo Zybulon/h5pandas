@@ -199,7 +199,6 @@ class HDF5ExtensionArray(
         For a boolean mask, return an instance of ``ExtensionArray``, filtered
         to the values where ``item`` is True.
         """
-        item = check_array_indexer(self, item)
         if is_scalar(item):
             try:
                 if self._dataset.ndim > 1:
@@ -220,12 +219,20 @@ class HDF5ExtensionArray(
             else:
                 dataset = self._dataset[item]
             return HDF5ExtensionArray(dataset)
+        elif isinstance(item, tuple) and len(item) > 1:
+            if self._dataset.ndim > 1:
+                dataset = self._dataset[item]
+            else:
+                # raise an error here, that is normal
+                dataset = self._dataset[item]
+            return HDF5ExtensionArray(dataset)
         else:
             # FIXME : AVOID COPY HERE
+            item = check_array_indexer(self, item)
             if self._dataset.ndim > 1:
-                dataset = self._dataset[item, self._column_index, ...]
+                dataset = self._dataset[:, self._column_index, ...][item]
             else:
-                dataset = self._dataset[item]
+                dataset = self._dataset[:][item]
             return HDF5ExtensionArray(dataset)
 
     def __setitem__(self, key, value) -> None:
@@ -293,8 +300,8 @@ class HDF5ExtensionArray(
         # This needs to be implemented so that pandas recognizes extension
         # arrays as list-like. The default implementation makes successive
         # calls to ``__getitem__``, which may be slower than necessary.
-        for i in range(len(self)):
-            yield self[i]
+
+        return self._ndarray.__iter__()
 
     def isnan(self) -> np.ndarray:
         return self.isna()
@@ -445,11 +452,14 @@ class HDF5ExtensionArray(
             num_array = num_array.astype(dtype)
         return num_array
 
-    def __array__(self, *args, **kwargs):
+    def __array__(self, *args, copy=False, **kwargs):
         if self._dataset.ndim > 1:
-            return self._dataset[:, self._column_index, ...]
+            array = self._dataset[:, self._column_index, ...]
         else:
-            return self._dataset
+            array = self._dataset
+        if copy:
+            array = np.copy(array)
+        return array
 
     # ------------------------------------------------------------------------
     # Required attributes
