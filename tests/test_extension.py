@@ -12,10 +12,12 @@ import h5py
 import time
 import pandas as pd
 import gc
+from line_profiler import profile
 
 HDF5Dtype("i8")
 
 
+@profile
 def test_general_behavior():
     arr = np.random.rand(30000, 50)
     with h5py.File(
@@ -98,8 +100,13 @@ def test_general_behavior():
         print("Test basic operations", time.time() - t0)
         t0 = time.time()
 
-        # Test operations with skipna
+        a = 0
+        for el in df["a"]:
+            a += el
+        assert a == sum(df["a"])
+        print("Test iter", a, time.time() - t0)
 
+        # Test operations with skipna
         # Test hasna
 
         # Test other types
@@ -151,10 +158,12 @@ def test_write_hdf5():
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
         df._values
-        d2 = h5pandas.dataframe_to_hdf(df, "foobar3.h5")
-        df2 = dataset_to_dataframe(d2)
-        assert (df2._values == df0._values).all()
-    d2.file.close()
+        h5pandas.dataframe_to_hdf(df, "foobar3.h5")
+        with h5py.File("foobar3.h5", "r", libver="latest") as f:
+            d2 = f["dataframe"]
+            df2 = dataset_to_dataframe(d2)
+            assert (df2._values == df0._values).all()
+
     os.remove("foobar3.h5")
 
 
@@ -168,9 +177,12 @@ def test_attributes():
         d = f.create_dataset("toto", data=arr)
         df = dataset_to_dataframe(d)
         df._values
-        d2 = h5pandas.dataframe_to_hdf(df, "foobar3.h5")
-        df2 = dataset_to_dataframe(d2)
-        assert (df2._values == df0._values).all()
+        h5pandas.dataframe_to_hdf(df, "foobar3.h5")
+        with h5py.File("foobar3.h5", "r", libver="latest") as f:
+            d2 = f["dataframe"]
+            df2 = dataset_to_dataframe(d2)
+            assert (df2._values == df0._values).all()
+    os.remove("foobar3.h5")
 
 
 def test_retrieve_dataframe():
@@ -211,7 +223,9 @@ def test_retrieve_dataframe():
 def test_retrieve_index_and_columns_string():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     try:
         df_named.to_hdf("foobar.h5", key="named_random_fixed", format="fixed")
     except ImportError:
@@ -255,7 +269,9 @@ def test_retrieve_index_and_columns_int():
 def test_retrieve_DataFrame_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named.attrs = {
         "A": "B",
         "C": [1, 2, 3],
@@ -266,7 +282,9 @@ def test_retrieve_DataFrame_attributes():
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_retrieved = f["dataframe"]
         for key in df_named.attrs.keys():
-            if len(df_named.attrs[key]) and not isinstance(df_named.attrs[key], str):
+            if len(df_named.attrs[key]) and not isinstance(
+                df_named.attrs[key], str
+            ):
                 assert all(df_named.attrs[key] == df_retrieved.attrs[key])
             else:
                 assert df_named.attrs[key] == df_retrieved.attrs[key]
@@ -277,7 +295,9 @@ def test_retrieve_DataFrame_attributes():
 def test_retrieve_Series_attributes():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named["é"].attrs["foo"] = "bar"
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
@@ -291,13 +311,17 @@ def test_retrieve_Series_attributes():
 def test_retrieve_Series_attributes_array():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named["é"].attrs["foo"] = np.array(["Hello", "you", "!"])
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
         df_retrieved = f["dataframe"]
-        assert all(df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"])
+        assert all(
+            df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"]
+        )
         print(df_retrieved["é"].attrs["foo"])
     os.remove("foobar.h5")
 
@@ -305,9 +329,12 @@ def test_retrieve_Series_attributes_array():
 def test_retrieve_Series_attributes_dict():
     arr = np.random.rand(3000, 5)
     index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+    df_named = pd.DataFrame(
+        arr, columns=["é", "b", "c", "d", "e"], index=index
+    )
     df_named["é"].attrs["foo"] = {"a": np.array(["Hello", "you", "!"])}
     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
+    # os.remove("foobar.h5")
 
 
 def test_endianness():
@@ -329,7 +356,9 @@ def test_endianness():
 
 
 if __name__ == "__main__":
+
     test_general_behavior()
+
     test_rmul()
     test_op_2EA()
     test_add()
