@@ -11,3 +11,4 @@ tests/debug.py
 examples/debug_benchmark_pandas.py
 /h5pandas.egg-info
 /build
+*.prof
