@@ -53,8 +53,9 @@ def dataframe_to_hdf(
 
     Returns
     -------
-    dataset : h5py.Dataset
+    dataset : h5py.Dataset or None
         The dataset created inside h5file.
+        If h5file is a string, returns None.
     """
     return _data_to_hf5(
         dataframe,
@@ -108,8 +109,9 @@ def ndarray_to_hdf(
 
     Returns
     -------
-    dataset : h5py.Dataset
+    dataset : h5py.Dataset or None
         The dataset created inside h5file.
+        If h5file is a string, returns None.
     """
     return _data_to_hf5(
         array,
@@ -135,7 +137,8 @@ def _data_to_hf5(
 ) -> h5py.Dataset:
     from h5pandas.group import File, Group
 
-    if isinstance(h5file, str):
+    h5file_is_string = isinstance(h5file, str)
+    if h5file_is_string:
         h5file = File(h5file, "a", libver=("v110", "latest"))
     elif isinstance(h5file, h5py.Group) and not isinstance(h5file, Group):
         h5file = Group(h5file)
@@ -161,7 +164,12 @@ def _data_to_hf5(
         *args,
         **kwargs,
     )
-    return dataframe.h5.dataset
+
+    if h5file_is_string:
+        h5file.close()
+        return
+    else:
+        return dataframe.h5.dataset
 
 
 def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=False):
@@ -192,7 +200,7 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
     -------
     pandas.DataFrame
         A dataFrame backed by the dataset.
-        If you change the dataset values, the DataFrame will cbe changed.
+        If you change the dataset values, the DataFrame will be changed.
 
     """
     # if no columns we try to find columns or we construct a tuple of None
