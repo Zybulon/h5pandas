@@ -59,9 +59,9 @@ class TestDtype(base.BaseDtypeTests):
 #             data[-ub - 1]
 
 
-# class TestGroupby(base.BaseGroupbyTests):
-#     # 1 failed, 11 passed
-#     pass
+class TestGroupby(base.BaseGroupbyTests):
+    # 12 passed
+    pass
 
 
 class TestInterface(base.BaseInterfaceTests):
