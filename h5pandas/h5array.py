@@ -566,7 +566,7 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
         -------
         ExtensionArray
         """
-        return HDF5ExtensionArray(np.array(self._ndarray))
+        return HDF5ExtensionArray(np.array(self._ndarray, copy=True))
 
     def _accumulate(self, name: str, *, skipna: bool = True, **kwargs):
         """
@@ -741,6 +741,46 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
         else:
             # one return value; re-box array-like results
             return type(self)(result)
+
+    def _groupby_op(
+        self,
+        *,
+        how: str,
+        has_dropped_na: bool,
+        min_count: int,
+        ngroups: int,
+        ids: np.typing.NDArray[np.intp],
+        **kwargs,
+    ) -> ArrayLike:
+        from pandas.core.arrays.string_ import StringDtype
+        from pandas.core.groupby.ops import WrappedCythonOp
+
+        initial: Any = 0
+        kind = WrappedCythonOp.get_kind_from_how(how)
+        op = WrappedCythonOp(how=how, kind=kind, has_dropped_na=has_dropped_na)
+
+        res_values = op._cython_op_ndim_compat(
+            self.to_numpy(),
+            min_count=min_count,
+            ngroups=ngroups,
+            comp_ids=ids,
+            mask=None,
+            initial=initial,
+            **kwargs,
+        )
+
+        if op.how in op.cast_blocklist:
+            # i.e. how in ["rank"], since other cast_blocklist methods don't go
+            #  through cython_operation
+            return res_values
+
+        if isinstance(self.dtype, StringDtype):
+            dtype = self.dtype
+            string_array_cls = dtype.construct_array_type()
+            return string_array_cls._from_sequence(res_values, dtype=dtype)
+
+        else:
+            return HDF5ExtensionArray(res_values)
 
     def value_counts(self, dropna: bool = True) -> Series:
         """
