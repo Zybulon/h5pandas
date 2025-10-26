@@ -47,10 +47,10 @@ class TestGetitem(base.BaseGetitemTests):
                 "index out of bounds",  # pyarrow
                 "Out of bounds access",  # Sparse
                 f"loc must be an integer between -{ub} and {ub}",  # Sparse
-                f"index {ub+1} is out of bounds for axis 0 with size {ub}",
-                f"index -{ub+1} is out of bounds for axis 0 with size {ub}",
-                f"Index \({ub+1}\) out of range for \(0-{ub-1}\)",
-                f"Index \(-1\) out of range for \(0-{ub-1}\)",
+                f"index {ub + 1} is out of bounds for axis 0 with size {ub}",
+                f"index -{ub + 1} is out of bounds for axis 0 with size {ub}",
+                f"Index \({ub + 1}\) out of range for \(0-{ub - 1}\)",
+                f"Index \(-1\) out of range for \(0-{ub - 1}\)",
             ]
         )
         with pytest.raises(IndexError, match=msg):

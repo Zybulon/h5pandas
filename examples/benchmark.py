@@ -31,8 +31,8 @@ st1 = os.stat(file1).st_size
 st2 = os.stat(file2).st_size
 
 print("\nWriting time without compression :")
-print(f"    h5pandas.dataframe_to_hdf : {t1-t0:.4}s for {st1/(1024)**2:.6}MB")
-print(f"    pandas.to_hdf (PyTables) : {t2-t1:.4}s for {st2/(1024)**2:.6}MB")
+print(f"    h5pandas.dataframe_to_hdf : {t1 - t0:.4}s for {st1 / (1024) ** 2:.6}MB")
+print(f"    pandas.to_hdf (PyTables) : {t2 - t1:.4}s for {st2 / (1024) ** 2:.6}MB")
 
 gc.collect()
 tracemalloc.start()
@@ -53,10 +53,10 @@ tracemalloc.stop()
 
 print("\nOpening file with without compression :")
 print(
-    f"    h5pandas.dataframe_to_hdf : time = {t1-t0:.4}s  RAM = {m1/(1024)**2:.6}MB"
+    f"    h5pandas.dataframe_to_hdf : time = {t1 - t0:.4}s  RAM = {m1 / (1024) ** 2:.6}MB"
 )
 print(
-    f"    pandas.to_hdf (PyTables) : time = {t3-t2:.4}s  RAM = {m2/(1024)**2:.6}MB"
+    f"    pandas.to_hdf (PyTables) : time = {t3 - t2:.4}s  RAM = {m2 / (1024) ** 2:.6}MB"
 )
 
 file.close()
@@ -70,9 +70,7 @@ t0 = time.time()
 h5pd.dataframe_to_hdf(
     df,
     file1,
-    **hdf5plugin.Blosc(
-        cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE
-    ),
+    **hdf5plugin.Blosc(cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE),
 )
 t1 = time.time()
 df.to_hdf(file2, key="dataframe", complib="blosc:blosclz", complevel=5)
@@ -88,9 +86,9 @@ file_size = [
 ]
 
 print("\nWriting time with compression level 5 :")
-print(f"    h5pandas.dataframe_to_hdf : {t1-t0:.4}s for {file_size[0]:.6}MB")
-print(f"    pandas.to_hdf (PyTables) : {t2-t1:.4}s for {file_size[1]:.6}MB")
-print(f"    pandas.to_feather (pyarrow) : {t3-t2:.4}s for {file_size[2]:.6}MB")
+print(f"    h5pandas.dataframe_to_hdf : {t1 - t0:.4}s for {file_size[0]:.6}MB")
+print(f"    pandas.to_hdf (PyTables) : {t2 - t1:.4}s for {file_size[1]:.6}MB")
+print(f"    pandas.to_feather (pyarrow) : {t3 - t2:.4}s for {file_size[2]:.6}MB")
 
 # Time evaluation
 t0 = time.time()
@@ -140,9 +138,9 @@ ram_usage = [m1 / 1024**2, m2 / 1024**2, m3 / 1024**2]
 read_time = [t1 - t0, t3 - t2, t5 - t4]
 
 print("\nOpening file with with compression :")
-print(f"\th5pandas.File : time = {t1-t0:.4}s  RAM = {ram_usage[0]:.6}MB")
-print(f"\tpandas.read_hdf : time = {t3-t2:.4}s  RAM = {ram_usage[1]:.6}MB")
-print(f"\tpandas.read_feather : time = {t5-t4:.4}s  RAM = {ram_usage[2]:.6}MB")
+print(f"\th5pandas.File : time = {t1 - t0:.4}s  RAM = {ram_usage[0]:.6}MB")
+print(f"\tpandas.read_hdf : time = {t3 - t2:.4}s  RAM = {ram_usage[1]:.6}MB")
+print(f"\tpandas.read_feather : time = {t5 - t4:.4}s  RAM = {ram_usage[2]:.6}MB")
 
 file.close()
 gc.collect()
