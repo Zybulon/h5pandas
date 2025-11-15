@@ -106,6 +106,17 @@ class HDF5Dtype(ExtensionDtype):
         return self._type
 
     @property
+    def itemsize(self) -> str:
+        """
+        The element size of this data-type object.
+
+        See Also
+        --------
+        numpy.dtype.kind
+        """
+        return self._numpy_dtype.itemsize
+
+    @property
     def kind(self) -> str:
         """
         A character code (one of 'biufcmMOSUV'), default 'O'.
