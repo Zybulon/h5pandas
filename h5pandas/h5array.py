@@ -58,6 +58,7 @@ from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 class HDF5ExtensionArray(
     np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray
 ):
+    # class HDF5ExtensionArray(pandas.api.extensions.ExtensionArray):
     """HDF5ExtensionArray."""
 
     _HANDLED_TYPES = (np.ndarray, numbers.Number)
@@ -521,13 +522,16 @@ class HDF5ExtensionArray(
             Otherwise a NumPy ndarray with 'dtype' for its dtype.
         """
         try:
-            dtype = dtype._numpy_dtype
+            np_dtype = dtype._numpy_dtype
         except Exception:
+            np_dtype = dtype
             pass
+        array = self._ndarray.astype(np_dtype)
 
-        return HDF5ExtensionArray(
-            self._ndarray.astype(dtype), self._column_index, dtype=dtype
-        )
+        if isinstance(dtype, HDF5Dtype):
+            return HDF5ExtensionArray(array, self._column_index, dtype=dtype)
+        else:
+            return array
 
     def take(self, indices, allow_fill=False, fill_value=None):
         from pandas.core.algorithms import take
@@ -608,6 +612,9 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
             )
         return meth(**kwargs)
 
+    def all(self):
+        return self._reduce("all")
+
     def _reduce(
         self,
         name: str,
@@ -677,6 +684,55 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
         if keepdims:
             result = type(self)([result])
         return result
+
+    def _values_for_factorize(self) -> tuple[np.ndarray, Any]:
+        """
+        Return an array and missing value suitable for factorization.
+
+        Returns
+        -------
+        values : ndarray
+            An array suitable for factorization. This should maintain order
+            and be a supported dtype (Float64, Int64, UInt64, String, Object).
+            By default, the extension array is cast to object dtype.
+        na_value : object
+            The value in `values` to consider missing. This will be treated
+            as NA in the factorization routines, so it will be coded as
+            `-1` and not included in `uniques`. By default,
+            ``np.nan`` is used.
+
+        Notes
+        -----
+        The values returned by this method are also used in
+        :func:`pandas.util.hash_pandas_object`. If needed, this can be
+        overridden in the ``self._hash_pandas_object()`` method.
+
+        Examples
+        --------
+        >>> pd.array([1, 2, 3])._values_for_factorize()
+        (array([1, 2, 3], dtype=object), nan)
+        """
+
+        return self.to_numpy(), np.nan
+
+    def unique(self) -> np.ndarray:
+        """
+        Compute the ExtensionArray of unique values.
+
+        Returns
+        -------
+        pandas.api.extensions.ExtensionArray
+
+        Examples
+        --------
+        >>> arr = pd.array([1, 2, 3, 1, 2, 3])
+        >>> arr.unique()
+        <IntegerArray>
+        [1, 2, 3]
+        Length: 3, dtype: Int64
+        """
+
+        return HDF5ExtensionArray(np.unique(self._ndarray))
 
     def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs, **kwargs):
         # Lightly modified version of
@@ -811,17 +867,27 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
         result = Series(counts, index=idx, copy=False)
         return result
 
-    def argsort(self):
-        """Return for indices of sorted values."""
-        return type(self)(np.argsort(self._ndarray))
+    # _accumulate
+    # _concat_same_type
+    # _explode
+    # _formatter
+    # _from_factorized
+    # _from_sequence
+    # _from_sequence_of_strings
+    # _hash_pandas_object
+    # _pad_or_backfill
 
-    def argmin(self):
+    def argmin(self, skipna=True):
         """Return for indice of min value."""
-        return type(self)(np.argmin(self._ndarray))
+        if not skipna:
+            raise NotImplementedError
+        return np.nanargmin(self._ndarray)
 
-    def argmax(self):
+    def argmax(self, skipna=True):
         """Return for indice of max value."""
-        return type(self)(np.argmax(self._ndarray))
+        if not skipna:
+            raise NotImplementedError
+        return np.nanargmax(self._ndarray)
 
     def dropna(self):
         """Remove missing values."""
