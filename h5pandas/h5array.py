@@ -147,7 +147,7 @@ class HDF5ExtensionArray(
         -------
         ExtensionArray
         """
-        return HDF5ExtensionArray(np.array(strings, dtype=dtype))
+        return HDF5ExtensionArray(np.array(strings, dtype=dtype._numpy_dtype))
 
     @classmethod
     def _from_factorized(cls, values, original):
@@ -521,6 +521,9 @@ class HDF5ExtensionArray(
             An ExtensionArray if dtype is Extensionnp.dtype,
             Otherwise a NumPy ndarray with 'dtype' for its dtype.
         """
+        if dtype == self.dtype and not copy:
+            return self
+
         try:
             np_dtype = dtype._numpy_dtype
         except Exception:
