@@ -15,7 +15,7 @@ import hdf5plugin
 file1 = "h5pandas.h5"
 file2 = "pandas.h5"
 file3 = "feather.feather"
-nrows = 100000
+nrows = 80000
 arr = np.random.rand(nrows, 3000)
 arr[:, 0] = np.arange(nrows)
 arr[:, 1] = np.zeros(nrows)
@@ -70,13 +70,17 @@ t0 = time.time()
 h5pd.dataframe_to_hdf(
     df,
     file1,
-    **hdf5plugin.Blosc(cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.BITSHUFFLE),
+    **hdf5plugin.Blosc(cname="blosclz", clevel=5, shuffle=hdf5plugin.Blosc.SHUFFLE),
 )
 t1 = time.time()
 df.to_hdf(file2, key="dataframe", complib="blosc:blosclz", complevel=5)
 t2 = time.time()
 df.to_feather(file3, compression="lz4", compression_level=5)
 t3 = time.time()
+del df
+del arr
+
+gc.collect()
 
 write_time = [t1 - t0, t2 - t1, t3 - t2]
 file_size = [
@@ -110,6 +114,7 @@ t5 = time.time()
 read_time = [t1 - t0, t3 - t2, t5 - t4]
 
 file.close()
+del df1, df2, df3, a
 
 
 # RAM evaluation
@@ -131,6 +136,8 @@ tracemalloc.reset_peak()
 df3 = pd.read_feather(file3)
 a = df3[0] * df3[2] + df3[1]
 _, m3 = tracemalloc.get_traced_memory()
+
+del df1, df2, df3, a
 gc.collect()
 tracemalloc.stop()
 
