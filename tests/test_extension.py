@@ -12,12 +12,10 @@ import h5py
 import time
 import pandas as pd
 import gc
-from line_profiler import profile
 
 HDF5Dtype("i8")
 
 
-@profile
 def test_general_behavior():
     arr = np.random.rand(30000, 50)
     with h5py.File(
