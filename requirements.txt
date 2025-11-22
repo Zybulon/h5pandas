@@ -1,4 +1,3 @@
 pandas>=2.1.0
 numpy
 h5py
-pytest
