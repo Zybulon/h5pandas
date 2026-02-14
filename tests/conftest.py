@@ -5,10 +5,7 @@ import operator
 
 import pytest
 
-from pandas import (
-    Series,
-    options,
-)
+from pandas import Series, options, option_context
 
 from pandas.core import ops
 
@@ -31,18 +28,18 @@ def dtype():
 @pytest.fixture
 def data():
     """
-    Length-100 array for this type.
+    Length-10 array for this type.
 
     * data[0] and data[1] should both be non missing
     * data[0] and data[1] should not be equal
     """
-    return HDF5ExtensionArray(np.arange(-57, -57 + 100, dtype=dtyp_numpy))
+    return HDF5ExtensionArray(np.arange(-57, -57 + 10, dtype=dtyp_numpy))
 
 
 @pytest.fixture
 def data_for_twos():
     """Length-100 array in which all the elements are two."""
-    return HDF5ExtensionArray(2 * np.ones(100))
+    return HDF5ExtensionArray(2 * np.ones(10))
 
 
 @pytest.fixture
@@ -90,6 +87,9 @@ def data_for_sorting():
 
     This should be three items [B, C, A] with
     A < B < C
+
+    For boolean dtypes (for which there are only 2 values available),
+    set B=C=True
     """
     return HDF5ExtensionArray([1.8, 3, -26])
 
@@ -135,7 +135,10 @@ def data_for_grouping():
 
     Expected to be like [B, B, NA, NA, A, A, B, C]
 
-    Where A < B < C and NA is missing
+    Where A < B < C and NA is missing.
+
+    If a dtype has _is_boolean = True, i.e. only 2 unique non-NA entries,
+    then set C=B.
     """
     return HDF5ExtensionArray(
         [1.8, 1.8, dtyp.na_value, dtyp.na_value, -26, -26, 1.8, 3]
@@ -193,7 +196,7 @@ def use_numpy(request):
 def fillna_method(request):
     """
     Parametrized fixture giving method parameters 'ffill' and 'bfill' for
-    Series.fillna(method=<method>) testing.
+    Series.<method> testing.
     """
     return request.param
 
@@ -419,5 +422,21 @@ _all_numeric_accumulations = ["cumsum", "cumprod", "cummin", "cummax"]
 def all_numeric_accumulations(request):
     """
     Fixture for numeric accumulation names
+    """
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def using_nan_is_na(request):
+    opt = request.param
+    with option_context("future.distinguish_nan_and_na", not opt):
+        yield opt
+
+
+@pytest.fixture(params=[None, lambda x: x])
+def sort_by_key(request):
+    """
+    Simple fixture for testing keys in sorting methods.
+    Tests None (no key) and the identity key.
     """
     return request.param
