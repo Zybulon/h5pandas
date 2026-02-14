@@ -239,7 +239,6 @@ def dataset_to_dataframe(dataset: h5py.Dataset, columns=None, index=None, copy=F
         columns_decoded,
         index,
         dtype=None,
-        typ="block",
         consolidate=copy,
     )
     dataframe = pandas.DataFrame._from_mgr(mgr, axes=[columns_decoded, index])
