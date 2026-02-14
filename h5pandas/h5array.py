@@ -56,7 +56,8 @@ from pandas.core.algorithms import _ensure_arraylike, value_counts_arraylike
 
 
 class HDF5ExtensionArray(
-    np.lib.mixins.NDArrayOperatorsMixin, pandas.api.extensions.ExtensionArray
+    np.lib.mixins.NDArrayOperatorsMixin,
+    pandas.api.extensions.ExtensionArray,
 ):
     # class HDF5ExtensionArray(pandas.api.extensions.ExtensionArray):
     """HDF5ExtensionArray."""
@@ -66,7 +67,7 @@ class HDF5ExtensionArray(
     # __array_priority__ = 1000
 
     def __init__(
-        self, dataset: h5py.Dataset, column_index: int = 0, dtype=None
+        self, dataset: h5py.Dataset, column_index: int = 0, dtype=None, readonly=False
     ) -> None:
         """
         Create a HDF5ExtensionArray from a dataset and a column number.
@@ -81,8 +82,15 @@ class HDF5ExtensionArray(
             The dtype of the array. The default is None.
 
         """
+        if readonly is None:
+            if isinstance(dataset, HDF5ExtensionArray):
+                readonly = dataset._readonly
+            else:
+                readonly = False
+
         if isinstance(dataset, HDF5ExtensionArray):
             dataset = dataset._dataset
+
         if not isinstance(dataset, (h5py.Dataset)):
             # if dtype is None:
             #     if isinstance(dataset, (list, tuple)):
@@ -92,9 +100,11 @@ class HDF5ExtensionArray(
                 dataset = np.array(dataset, dtype=dtype)
 
             column_index = 0
+
         self._dataset = dataset
         self._column_index = column_index
         self._dtype = HDF5Dtype(self._dataset.dtype)
+        self._readonly = readonly
 
     @classmethod
     def _from_sequence(
@@ -213,7 +223,9 @@ class HDF5ExtensionArray(
                 )
 
         elif isinstance(item, slice) and item == slice(None):
-            return HDF5ExtensionArray(self._dataset, self._column_index)
+            return HDF5ExtensionArray(
+                self._dataset, self._column_index, readonly=self._readonly
+            )
         elif isinstance(item, tuple) and (slice(None) in item or Ellipsis in item):
             if self._dataset.ndim > 1:
                 dataset = self._dataset[(*item, self._column_index, ...)]
@@ -280,6 +292,9 @@ class HDF5ExtensionArray(
         # Note, also, that Series/DataFrame.where internally use __setitem__
         # on a copy of the data.
         # FIXME
+
+        if self._readonly:
+            raise ValueError("Cannot modify read-only array")
 
         if self._dataset.ndim > 1:
             return self._dataset.__setitem__((key, self._column_index, Ellipsis), value)
@@ -377,6 +392,11 @@ class HDF5ExtensionArray(
         )
 
         return cls(dataset)
+
+    def _cast_pointwise_result(self, values: ArrayLike) -> ArrayLike:
+        values = np.asarray(values, dtype=object)
+        array = lib.maybe_convert_objects(values, convert_non_numeric=True)
+        return HDF5ExtensionArray(array)
 
     def view(self, dtype: Dtype | None = None) -> ArrayLike:
         """
@@ -529,12 +549,16 @@ class HDF5ExtensionArray(
         except Exception:
             np_dtype = dtype
             pass
-        array = self._ndarray.astype(np_dtype)
 
         if isinstance(dtype, HDF5Dtype):
-            return HDF5ExtensionArray(array, self._column_index, dtype=dtype)
+            array = self._ndarray.astype(np_dtype)
+            return HDF5ExtensionArray(
+                array, self._column_index, dtype=dtype, readonly=self._readonly
+            )
+        elif isinstance(dtype, pandas.StringDtype):
+            return pandas.array(self._ndarray, dtype=dtype, copy=False)
         else:
-            return array
+            return self._ndarray.astype(np_dtype)
 
     def take(self, indices, allow_fill=False, fill_value=None):
         from pandas.core.algorithms import take
@@ -880,17 +904,19 @@ because Big-endian buffer not supported on little-endian compiler by pandas.",
     # _hash_pandas_object
     # _pad_or_backfill
 
-    def argmin(self, skipna=True):
-        """Return for indice of min value."""
-        if not skipna:
-            raise NotImplementedError
-        return np.nanargmin(self._ndarray)
+    # def argmin(self, skipna=True):
+    #     """Return for indice of min value."""
+    #     if skipna:
+    #         return np.nanargmin(self._ndarray)
+    #     else:
+    #         return np.argmin(self._ndarray)
 
-    def argmax(self, skipna=True):
-        """Return for indice of max value."""
-        if not skipna:
-            raise NotImplementedError
-        return np.nanargmax(self._ndarray)
+    # def argmax(self, skipna=True):
+    #     """Return for indice of max value."""
+    #     if skipna:
+    #         return np.nanargmax(self._ndarray)
+    #     else:
+    #         return np.argmax(self._ndarray)
 
     def dropna(self):
         """Remove missing values."""

@@ -12,15 +12,13 @@ class TestConstructors(base.BaseConstructorsTests):
 
 
 class TestCasting(base.BaseCastingTests):
-    # 11 passed
-
-    # API still experimental so we bypass this test for now
-    def test_astype_string(self):
-        return
+    # 12 passed
+    pass
 
 
 class TestDtype(base.BaseDtypeTests):
     # 22 passed
+
     def test_construct_from_string_wrong_type_raises(self, dtype):
         with pytest.raises(
             TypeError,
@@ -29,40 +27,41 @@ class TestDtype(base.BaseDtypeTests):
             type(dtype).construct_from_string(0)
 
 
-# class TestGetitem(base.BaseGetitemTests):
-#     # 35 passed, 2 xfailed
-#     def test_getitem_invalid(self, data):
-#         # TODO: box over scalar, [scalar], (scalar,)?
+class TestGetitem(base.BaseGetitemTests):
+    # 35 passed, 2 xfailed
 
-#         msg = (
-#             r"only integers, slices \(`:`\), ellipsis \(`...`\), numpy.newaxis "
-#             r"\(`None`\) and integer or boolean arrays are valid indices"
-#         )
-#         with pytest.raises(IndexError, match=msg):
-#             data["foo"]
-#         with pytest.raises(IndexError, match=msg):
-#             data[2.5]
+    def test_getitem_invalid(self, data):
+        # TODO: box over scalar, [scalar], (scalar,)?
 
-#         ub = len(data)
-#         msg = "|".join(
-#             [
-#                 "list index out of range",  # json
-#                 "index out of bounds",  # pyarrow
-#                 "Out of bounds access",  # Sparse
-#                 f"loc must be an integer between -{ub} and {ub}",  # Sparse
-#                 f"index {ub + 1} is out of bounds for axis 0 with size {ub}",
-#                 f"index -{ub + 1} is out of bounds for axis 0 with size {ub}",
-#                 f"Index \({ub + 1}\) out of range for \(0-{ub - 1}\)",
-#                 f"Index \(-1\) out of range for \(0-{ub - 1}\)",
-#             ]
-#         )
-#         with pytest.raises(IndexError, match=msg):
-#             data[ub + 1]
-#         with pytest.raises(IndexError, match=msg):
-#             data[-ub - 1]
+        msg = (
+            r"only integers, slices \(`:`\), ellipsis \(`...`\), numpy.newaxis "
+            r"\(`None`\) and integer or boolean arrays are valid indices"
+        )
+        with pytest.raises(IndexError, match=msg):
+            data["foo"]
+        with pytest.raises(IndexError, match=msg):
+            data[2.5]
 
-#     def test_take_pandas_style_negative_raises(self, data, na_value):
-#         pass
+        ub = len(data)
+        msg = "|".join(
+            [
+                "list index out of range",  # json
+                "index out of bounds",  # pyarrow
+                "Out of bounds access",  # Sparse
+                f"loc must be an integer between -{ub} and {ub}",  # Sparse
+                f"index {ub + 1} is out of bounds for axis 0 with size {ub}",
+                f"index -{ub + 1} is out of bounds for axis 0 with size {ub}",
+                f"Index \({ub + 1}\) out of range for \(0-{ub - 1}\)",
+                f"Index \(-1\) out of range for \(0-{ub - 1}\)",
+            ]
+        )
+        with pytest.raises(IndexError, match=msg):
+            data[ub + 1]
+        with pytest.raises(IndexError, match=msg):
+            data[-ub - 1]
+
+    def test_take_pandas_style_negative_raises(self, data, na_value):
+        pass
 
 
 class TestGroupby(base.BaseGroupbyTests):
@@ -71,35 +70,25 @@ class TestGroupby(base.BaseGroupbyTests):
 
 
 class TestInterface(base.BaseInterfaceTests):
-    #  14 passed
+    #  16 passed
     pass
 
 
-# class TestParsing(base.BaseParsingTests):
-#     # 2 passed
-#     # Failed the second time we run it
-#     # I don't understand the bug yet, two instances of
-#     # HDF5Dtype seems to have different types
-#     pass
+class TestParsing(base.BaseParsingTests):
+    # 2 passed
+    # Failed the second time we run it
+    # I don't understand the bug yet, two instances of
+    # HDF5Dtype seems to have different types
+    pass
 
 
-# class TestMethods(base.BaseMethodsTests):
-#     # 112 passed, 4 errors
-
-#     @pytest.mark.parametrize("method", ["argmax", "argmin"])
-#     def test_argmin_argmax_all_na(self, method, data, na_value):
-#         # all missing with skipna=True is the same as empty
-#         err_msg = "All-NaN slice encountered"
-#         data_na = type(data)._from_sequence([na_value, na_value], dtype=data.dtype)
-#         with pytest.raises(ValueError, match=err_msg):
-#             getattr(data_na, method)()
-
-#     def test_combine_le(self):
-#         pass
+class TestMethods(base.BaseMethodsTests):
+    # 1 failed, 133 passed
+    pass
 
 
 class TestMissing(base.BaseMissingTests):
-    # 24 passed
+    # 25 passed
     pass
 
 
@@ -133,15 +122,8 @@ class TestPrinting(base.BasePrintingTests):
     pass
 
 
-class TestBooleanReduce(base.BaseReduceTests):
-    # 46 passed, 6 skipped
-    def _supports_reduction(self, obj, op_name: str) -> bool:
-        # Specify if we expect this reduction to succeed.
-        return True
-
-
 class TestReduce(base.BaseReduceTests):
-    #  46 passed, 6 skipped
+    #  50 passed, 2 skipped
     def _supports_reduction(self, obj, op_name: str) -> bool:
         # Specify if we expect this reduction to succeed.
         return True
@@ -155,5 +137,5 @@ class TestReshaping(base.BaseReshapingTests):
 
 
 if __name__ == "__main__":
-    retcode = pytest.main(["test_extension.py"])
+    # retcode = pytest.main(["test_extension.py"])
     retcode = pytest.main(["test_HDFExtensionArray.py"])
