@@ -394,7 +394,6 @@ class HDF5ExtensionArray(
         return cls(dataset)
 
     def _cast_pointwise_result(self, values: ArrayLike) -> ArrayLike:
-        values = np.asarray(values, dtype=object)
         array = lib.maybe_convert_objects(values, convert_non_numeric=True)
         return HDF5ExtensionArray(array)
 
@@ -581,7 +580,7 @@ class HDF5ExtensionArray(
             # systems. Maybe this Issue will resolve it :
             # https://github.com/pandas-dev/pandas/issues/53234
             warnings.warn(
-                "h5pandas : allow_fill is not applied by h5pandas\
+                "h5pandas : allow_fill is not applied by h5pandas \
 because Big-endian buffer not supported on little-endian compiler by pandas.",
                 DeprecationWarning,
             )
