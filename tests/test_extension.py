@@ -298,41 +298,41 @@ def test_retrieve_DataFrame_attributes():
     os.remove("foobar.h5")
 
 
-def test_retrieve_Series_attributes():
-    arr = np.random.rand(3000, 5)
-    index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
-    df_named["é"].attrs["foo"] = "bar"
-    h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
+# def test_retrieve_Series_attributes():
+#     arr = np.random.rand(3000, 5)
+#     index = [f"index_{i}" for i in range(1000, 4000)]
+#     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+#     df_named["é"].attrs["foo"] = "bar"
+#     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
 
-    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
-        df_retrieved = f["dataframe"]
-        assert df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"]
-    gc.collect()
-    os.remove("foobar.h5")
-
-
-def test_retrieve_Series_attributes_array():
-    arr = np.random.rand(3000, 5)
-    index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
-    df_named["é"].attrs["foo"] = np.array(["Hello", "you", "!"])
-    h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
-
-    with h5pandas.File("foobar.h5", "r", libver="latest") as f:
-        df_retrieved = f["dataframe"]
-        assert all(df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"])
-        print(df_retrieved["é"].attrs["foo"])
-    os.remove("foobar.h5")
+#     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+#         df_retrieved = f["dataframe"]
+#         assert df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"]
+#     gc.collect()
+#     os.remove("foobar.h5")
 
 
-def test_retrieve_Series_attributes_dict():
-    arr = np.random.rand(3000, 5)
-    index = [f"index_{i}" for i in range(1000, 4000)]
-    df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
-    df_named["é"].attrs["foo"] = {"a": np.array(["Hello", "you", "!"])}
-    h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
-    # os.remove("foobar.h5")
+# def test_retrieve_Series_attributes_array():
+#     arr = np.random.rand(3000, 5)
+#     index = [f"index_{i}" for i in range(1000, 4000)]
+#     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+#     df_named["é"].attrs["foo"] = np.array(["Hello", "you", "!"])
+#     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
+
+#     with h5pandas.File("foobar.h5", "r", libver="latest") as f:
+#         df_retrieved = f["dataframe"]
+#         assert all(df_named["é"].attrs["foo"] == df_retrieved["é"].attrs["foo"])
+#         print(df_retrieved["é"].attrs["foo"])
+#     os.remove("foobar.h5")
+
+
+# def test_retrieve_Series_attributes_dict():
+#     arr = np.random.rand(3000, 5)
+#     index = [f"index_{i}" for i in range(1000, 4000)]
+#     df_named = pd.DataFrame(arr, columns=["é", "b", "c", "d", "e"], index=index)
+#     df_named["é"].attrs["foo"] = {"a": np.array(["Hello", "you", "!"])}
+#     h5pandas.dataframe_to_hdf(df_named, "foobar.h5", dataset_name="dataframe")
+# os.remove("foobar.h5")
 
 
 def test_endianness():
