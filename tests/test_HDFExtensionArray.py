@@ -4,6 +4,8 @@ h5pandas tests.
 
 import pytest
 from pandas.tests.extension import base
+from h5pandas import HDF5Dtype
+from pandas._typing import Dtype
 
 
 class TestConstructors(base.BaseConstructorsTests):
@@ -51,8 +53,8 @@ class TestGetitem(base.BaseGetitemTests):
                 f"loc must be an integer between -{ub} and {ub}",  # Sparse
                 f"index {ub + 1} is out of bounds for axis 0 with size {ub}",
                 f"index -{ub + 1} is out of bounds for axis 0 with size {ub}",
-                f"Index \({ub + 1}\) out of range for \(0-{ub - 1}\)",
-                f"Index \(-1\) out of range for \(0-{ub - 1}\)",
+                f"Index \\({ub + 1}\\) out of range for \\(0-{ub - 1}\\)",
+                f"Index \\(-1\\) out of range for \\(0-{ub - 1}\\)",
             ]
         )
         with pytest.raises(IndexError, match=msg):
@@ -83,7 +85,9 @@ class TestParsing(base.BaseParsingTests):
 
 
 class TestMethods(base.BaseMethodsTests):
-    # 1 failed, 133 passed
+    # 134 passed
+
+    _combine_le_expected_dtype: Dtype = HDF5Dtype("bool")
     pass
 
 
@@ -137,5 +141,5 @@ class TestReshaping(base.BaseReshapingTests):
 
 
 if __name__ == "__main__":
-    # retcode = pytest.main(["test_extension.py"])
+    retcode = pytest.main(["test_extension.py"])
     retcode = pytest.main(["test_HDFExtensionArray.py"])
